@@ -24,16 +24,15 @@
   .signup-link { margin-top:15px; color:#2c3ea8; cursor:pointer; text-decoration:underline; }
 
   #classroom { display:none; padding:30px; background:#f8f9fc; }
-  #participants { display:flex; flex-wrap:wrap; gap:20px; justify-content:center; margin:25px 0; }
-  .participant-wrapper { width:280px; text-align:center; background:#fff; border-radius:12px; padding:10px; box-shadow:0 4px 12px rgba(0,0,0,0.1); }
-  .participant-video { width:100%; border-radius:8px; }
-  .teacher-video { border:4px solid #2196f3; }
-  .student-video { border:4px solid #4caf50; }
+  #participants { display:flex; flex-wrap:wrap; gap:15px; justify-content:center; margin:20px 0; }
+  .participant-wrapper { width:300px; text-align:center; background:#fff; border-radius:12px; padding:10px; box-shadow:0 4px 12px rgba(0,0,0,0.1); }
+  .participant-video { width:100%; border-radius:8px; border:3px solid #ccc; }
+  .teacher-video { border-color:#2196f3; }
+  .student-video { border-color:#4caf50; }
 </style>
 </head>
 <body>
 
-<!-- LOGIN PAGE -->
 <div id="loginPage">
   <div class="login-box">
     <h2>Next Level Academy</h2>
@@ -47,7 +46,6 @@
   </div>
 </div>
 
-<!-- CLASSROOM -->
 <div id="classroom">
   <h2 id="roomTitle">Live Classroom</h2>
   <div id="participants"></div>
@@ -70,7 +68,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.js"></script>
 
 <script>
-  const socket = io(); // Connects to your Render backend automatically
+  // Change this to your actual Render backend URL
+  const socket = io('https://next-level-reborn-1777.onrender.com');
 
   let role = "", username = "", roomCode = null;
   let localStream = null;
@@ -86,8 +85,8 @@
     document.getElementById("classroom").style.display = "block";
 
     if (role === "teacher") {
-      const title = prompt("Enter Lesson Title:");
-      if (title) socket.emit('create-room', { username, lessonTitle: title });
+      const lessonTitle = prompt("Enter Lesson Title:");
+      if (lessonTitle) socket.emit('create-room', { username, lessonTitle });
     } else {
       const code = prompt("Enter Room Code from Teacher:");
       if (code) socket.emit('join-room', { username, roomCode: code });
@@ -95,7 +94,7 @@
   }
 
   function showSignup() {
-    alert("Sign Up is coming soon! Use any username for demo.");
+    alert("Sign Up coming soon! Use any username for demo.");
   }
 
   // Start Camera
@@ -134,7 +133,6 @@
     location.reload();
   }
 
-  // Receive room info
   socket.on('room-created', (data) => {
     roomCode = data.roomCode;
     document.getElementById("roomTitle").textContent = `Room: ${data.lessonTitle}`;
