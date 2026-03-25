@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <title>Next Level Academy</title>
 <style>
+  /* Your existing styles – unchanged */
   body { margin:0; font-family:Arial,sans-serif; background:#eef1f7; color:#333; }
   #loginPage {
     height:100vh; display:flex; justify-content:center; align-items:center;
@@ -185,7 +186,6 @@
 
 <script>
   // ================== SOCKET CONNECTION ==================
-  // Use your backend URL explicitly
   const BACKEND_URL = 'https://next-level-reborn-1777-10.onrender.com';
   const socket = io(BACKEND_URL);
 
@@ -222,13 +222,15 @@
 
     if (role === "teacher") {
       document.getElementById("teacherControls").style.display = "block";
-    } else {
-      // Student: fetch ongoing classes from server
-      socket.emit('get-rooms'); // will be handled by server (broadcast)
     }
 
     updateExitButton();
-    renderOngoingClasses(); // initial from localStorage, will be replaced by socket
+
+    // Student: we will rely on socket 'room-list' to show classes
+    if (role === "student") {
+      // Show a placeholder until list arrives
+      document.getElementById("ongoingGrid").innerHTML = '<div class="course-card">Loading classes...</div>';
+    }
   }
 
   function showSignup() {
@@ -275,11 +277,13 @@
   }
 
   function refreshOngoingClasses() {
-    // socket will update automatically via 'room-list' event
+    // The backend will automatically send 'room-list' on refresh; we can just request it
+    socket.emit('get-rooms'); // optional, but we already broadcast on connect
   }
 
   // Socket listens for room list updates
   socket.on('room-list', (rooms) => {
+    console.log('Received room list:', rooms);
     if (role === "student") {
       renderOngoingClasses(rooms);
     }
@@ -319,6 +323,7 @@
 
   // ================== PEERJS SETUP ==================
   function initPeer() {
+    console.log('Initializing PeerJS...');
     peer = new Peer(undefined, {
       host: '0.peerjs.com',
       port: 443,
@@ -341,6 +346,7 @@
     });
 
     peer.on('call', (call) => {
+      console.log('Incoming call from', call.peer);
       if (localStream) {
         call.answer(localStream);
         setupCall(call);
@@ -352,13 +358,18 @@
     });
 
     peer.on('connection', (conn) => {
+      console.log('Incoming data connection from', conn.peer);
       setupDataConnection(conn);
+    });
+
+    peer.on('error', (err) => {
+      console.error('PeerJS error:', err);
     });
   }
 
   // When we receive a new peer ID from socket, connect to them
   socket.on('new-peer', ({ peerId, senderId }) => {
-    console.log('New peer joined:', peerId);
+    console.log('New peer joined, connecting to:', peerId);
     // Connect data channel
     const conn = peer.connect(peerId);
     setupDataConnection(conn);
@@ -388,13 +399,16 @@
         showHandNotification(data.sender);
       }
     });
+    conn.on('error', (err) => console.error('Data connection error:', err));
   }
 
   function setupCall(call) {
     call.on('stream', (remoteStream) => {
+      console.log('Received remote stream from', call.peer);
       displayRemoteVideo(call.peer, remoteStream);
     });
     connections[call.peer] = call;
+    call.on('error', (err) => console.error('Call error:', err));
   }
 
   function displayRemoteVideo(peerId, stream) {
