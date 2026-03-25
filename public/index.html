@@ -1,253 +1,182 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Next Level Academy</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: #eef1f7;
-      color: #333;
-    }
-    /* Login Page */
-    #loginPage {
-      height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)),
-                  url('https://i.postimg.cc/jd0ZRMCV/next-level.jpg') center/cover no-repeat;
-    }
-    .login-box {
-      background: rgba(255,255,255,0.92);
-      padding: 40px 50px;
-      border-radius: 20px;
-      text-align: center;
-      max-width: 380px;
-      width: 90%;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-    }
-    .login-box h2 { color: #2c3ea8; margin-bottom: 25px; }
-    .login-box input, .login-box select {
-      width: 100%;
-      padding: 12px;
-      margin: 12px 0;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      font-size: 1rem;
-    }
-    .signup-link {
-      margin-top: 20px;
-      color: #2c3ea8;
-      text-decoration: underline;
-      cursor: pointer;
-    }
-    /* Dashboard */
-    .dashboard {
-      padding: 30px;
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-    h2 { color: #2c3ea8; margin-bottom: 20px; }
-    .course-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-      gap: 20px;
-      margin: 20px 0;
-    }
-    .course-card {
-      background: linear-gradient(135deg, #5a6bff, #7a9cff);
-      padding: 20px;
-      border-radius: 16px;
-      color: white;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-      transition: transform 0.2s;
-    }
-    .course-card:hover { transform: translateY(-4px); }
-    .course-card button {
-      margin-top: 12px;
-      background: white;
-      color: #2c3ea8;
-      border: none;
-      padding: 8px 16px;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-    button {
-      background: #2c3ea8;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 1rem;
-      margin: 5px;
-      transition: background 0.2s;
-    }
-    button:hover { background: #1c2c80; }
-    button.end-class { background: #d32f2f; }
-    button.end-class:hover { background: #b71c1c; }
-    button.leave-class { background: #ff9800; }
-    button.leave-class:hover { background: #e68900; }
-    /* Classroom */
-    #classroom {
-      display: none;
-      padding: 30px;
-      background: #f8f9fc;
-    }
-    #participants {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 20px;
-      justify-content: center;
-      margin: 20px 0;
-    }
-    .participant-wrapper {
-      width: 280px;
-      background: white;
-      border-radius: 12px;
-      padding: 10px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      transition: all 0.3s;
-    }
-    .participant-wrapper.expanded {
-      width: 100%;
-      max-width: 800px;
-      margin: 10px auto;
-    }
-    .participant-video {
-      width: 100%;
-      border-radius: 8px;
-      background: #000;
-      cursor: pointer;
-    }
-    .teacher-video { border: 3px solid #2196f3; }
-    .student-video { border: 3px solid #4caf50; }
-    .participant-label {
-      margin-top: 8px;
-      font-weight: bold;
-      text-align: center;
-    }
-    .participant-controls {
-      display: flex;
-      justify-content: center;
-      gap: 10px;
-      margin-top: 8px;
-    }
-    .mute-btn {
-      background: #ff5722;
-      padding: 5px 10px;
-      font-size: 0.8rem;
-    }
-    .volume-slider { width: 80px; }
-    /* Chat */
-    #chat {
-      margin-top: 30px;
-      max-width: 900px;
-      margin-left: auto;
-      margin-right: auto;
-    }
-    #messages {
-      height: 250px;
-      overflow-y: auto;
-      border: 1px solid #ccc;
-      padding: 12px;
-      background: white;
-      border-radius: 12px;
-      margin-bottom: 12px;
-    }
-    .chat-message {
-      margin: 6px 0;
-      padding: 8px;
-      border-radius: 8px;
-    }
-    .chat-message.teacher { background: #fff3e0; font-weight: bold; }
-    .chat-message.student { background: #e3f2fd; }
-    .chat-message.system { background: #f0f0f0; font-style: italic; }
-    #chat-input-area {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-    #chat-input {
-      flex: 1;
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-    }
-    /* Hand raise notification */
-    #hand-raise-notification {
-      position: fixed;
-      top: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #ff5722;
-      color: white;
-      padding: 12px 24px;
-      border-radius: 30px;
-      font-weight: bold;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-      display: none;
-      z-index: 1000;
-    }
-    .teacher-controls { margin-bottom: 20px; }
-    .teacher-controls input {
-      padding: 10px;
-      width: 250px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>Next Level Academy</title>
+<style>
+  body { margin:0; font-family:Arial,sans-serif; background:#eef1f7; color:#333; }
+  #loginPage {
+    height:100vh; display:flex; justify-content:center; align-items:center;
+    background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), 
+                url('https://i.postimg.cc/jd0ZRMCV/next-level.jpg') center/cover no-repeat;
+    color:white;
+  }
+  .login-box {
+    background:rgba(255,255,255,0.92); color:#111; padding:50px 40px; border-radius:16px;
+    text-align:center; box-shadow:0 8px 30px rgba(0,0,0,0.4); backdrop-filter:blur(6px);
+    max-width:380px; width:90%;
+  }
+  .login-box h2 { margin-bottom:30px; color:#2c3ea8; }
+  .login-box input, .login-box select {
+    padding:14px; margin:14px 0; width:100%; max-width:280px;
+    border:1px solid #aaa; border-radius:8px; font-size:16px; box-sizing:border-box;
+  }
+  .signup-link { margin-top:15px; color:#2c3ea8; cursor:pointer; text-decoration:underline; }
+
+  .welcome-hero { position:relative; height:70vh; min-height:500px; overflow:hidden;
+    display:flex; align-items:center; justify-content:center; text-align:center; color:white; }
+  .hero-image { position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; z-index:1; }
+  .hero-overlay { position:relative; z-index:2; background:rgba(0,0,0,0.55); padding:40px 60px;
+    border-radius:16px; max-width:90%; }
+  .welcome-hero h1 { font-size:3.8rem; margin:0 0 16px; text-shadow:2px 2px 10px rgba(0,0,0,0.7); }
+  .welcome-hero p { font-size:1.6rem; margin:10px 0; text-shadow:1px 1px 5px rgba(0,0,0,0.6); }
+  #roleGreeting { font-size:1.45rem; font-weight:bold; margin-top:16px; }
+
+  .dashboard { padding:30px; max-width:1400px; margin:0 auto; }
+  h2 { color:#2c3ea8; margin-bottom:20px; }
+  .course-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:24px; margin-top:20px; }
+  .course-card {
+    padding:20px; border-radius:16px; color:white; background:linear-gradient(135deg,#5a6bff,#7a9cff);
+    box-shadow:0 6px 15px rgba(0,0,0,0.18); transition:transform 0.2s;
+  }
+  .course-card:hover { transform:translateY(-6px); }
+  .no-content { text-align:center; padding:40px 20px; background:white; border-radius:12px;
+    box-shadow:0 4px 12px rgba(0,0,0,0.1); font-size:1.2rem; color:#555; }
+
+  button { padding:12px 24px; background:#2c3ea8; color:white; border:none; border-radius:8px;
+    cursor:pointer; font-size:16px; transition:background 0.2s; margin:5px; }
+  button:hover { background:#1c2c80; }
+  button.end-class { background:#d32f2f; }
+  button.end-class:hover { background:#b71c1c; }
+  button.leave-class { background:#ff9800; }
+  button.leave-class:hover { background:#e68900; }
+
+  .start-lesson-box, .upload-box { margin:30px 0; padding:24px; background:white; border-radius:12px;
+    box-shadow:0 4px 12px rgba(0,0,0,0.1); }
+  .start-lesson-box input, .upload-box input { display:block; margin:12px 0; padding:10px; width:100%; max-width:400px; }
+
+  #classroom { display:none; padding:30px; background:#f8f9fc; }
+  #participants { display:flex; flex-wrap:wrap; gap:20px; justify-content:center; margin:25px 0; }
+  .participant-wrapper {
+    flex:0 1 auto; width:280px; text-align:center; background:#fff; border-radius:12px; padding:10px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.1); transition:all 0.3s;
+  }
+  .participant-wrapper.expanded { width:100%; max-width:800px; margin:10px auto; }
+  .participant-video {
+    width:100%; height:auto; aspect-ratio:4/3; border-radius:8px;
+    object-fit:cover; background:#000; cursor:pointer;
+  }
+  .teacher-video { border:4px solid #2196f3; }
+  .student-video { border:4px solid #4caf50; }
+  .participant-label { margin-top:8px; font-weight:bold; }
+  .participant-controls { display:flex; justify-content:center; gap:10px; margin-top:5px; }
+  .mute-btn { background:#ff5722; padding:6px 12px; font-size:14px; }
+  .volume-slider { width:80px; }
+
+  #classroom-chat { margin-top:35px; max-width:900px; margin-left:auto; margin-right:auto; }
+  #chat-messages { border:1px solid #ccc; border-radius:12px; padding:18px; height:260px; overflow-y:auto;
+    background:#fff; text-align:left; margin-bottom:15px; }
+  .chat-message { margin:10px 0; padding:12px; border-radius:10px; }
+  .chat-message.teacher { background:#fff3e0; font-weight:bold; }
+  .chat-message.student { background:#e3f2fd; }
+  #hand-raise-notification {
+    position:fixed; top:20px; left:50%; transform:translateX(-50%);
+    background:#ff5722; color:white; padding:14px 28px; border-radius:30px; font-weight:bold;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35); display:none; z-index:1000;
+  }
+  #chat-input-area { display:flex; gap:12px; }
+  #chat-input { flex:1; padding:14px; border:1px solid #ccc; border-radius:10px; font-size:16px; }
+</style>
 </head>
 <body>
 
+<!-- LOGIN PAGE -->
 <div id="loginPage">
   <div class="login-box">
     <h2>Next Level Academy</h2>
-    <input type="text" id="username" placeholder="Your Name" autocomplete="off"><br>
+    <input type="text" id="username" placeholder="Username"><br>
+    <input type="password" id="password" placeholder="Password"><br>
     <select id="role">
       <option value="student">Student</option>
       <option value="teacher">Teacher</option>
-    </select><br>
+    </select><br><br>
     <button onclick="login()">Login</button>
-    <div class="signup-link" onclick="alert('Demo – use any username/password')">Don't have an account? Sign Up</div>
+    <div class="signup-link" onclick="showSignup()">Don't have an account? Sign Up</div>
   </div>
 </div>
 
-<div id="platform" class="dashboard" style="display:none;">
-  <div id="teacherControls" class="teacher-controls" style="display:none;">
-    <h3>Create a Class</h3>
-    <input type="text" id="lessonTitle" placeholder="Lesson Title (e.g. Math Grade 7)">
-    <button onclick="startLesson()">Start Lesson</button>
+<!-- MAIN PLATFORM -->
+<div id="platform" style="display:none">
+  <div class="welcome-hero">
+    <img src="https://i.postimg.cc/Hn7sYpZJ/next-level-7.png" alt="Next Level Academy" class="hero-image">
+    <div class="hero-overlay">
+      <h1>Welcome to Next Level Academy</h1>
+      <p id="welcomeMessage">Interactive Online Learning Platform</p>
+      <p id="roleGreeting"></p>
+    </div>
   </div>
 
-  <h2>Ongoing Classes</h2>
-  <div id="ongoingGrid" class="course-grid">
-    <div class="course-card">No classes yet</div>
+  <div class="dashboard">
+    <h2>Ongoing Classes</h2>
+    <div id="ongoingClassesContainer">
+      <div class="course-grid" id="ongoingGrid"></div>
+      <div id="noOngoingMessage" class="no-content" style="display:none;">
+        No ongoing classes at the moment<br><br>
+        <button onclick="refreshOngoingClasses()">Refresh Classes</button>
+      </div>
+    </div>
+
+    <div id="materialsSection">
+      <h2>Uploaded Materials</h2>
+      <div id="materialsContainer">
+        <div class="course-grid" id="materialsGrid"></div>
+        <div id="noMaterialsMessage" class="no-content" style="display:none;">
+          No academic materials uploaded yet
+        </div>
+      </div>
+    </div>
+
+    <div id="teacherControls" style="display:none;">
+      <div class="start-lesson-box">
+        <h3>Start a Lesson</h3>
+        <input type="text" id="lessonTitle" placeholder="Lesson Title (e.g. Fractions - Grade 7)">
+        <button onclick="startLesson()">Start Lesson</button>
+      </div>
+
+      <div class="upload-box">
+        <h3>Upload Material</h3>
+        <input type="text" id="materialTitle" placeholder="Material Title">
+        <input type="file" id="fileUpload" accept="video/*,image/*,.pdf">
+        <button onclick="uploadMaterial()">Upload</button>
+      </div>
+    </div>
+
+    <h2>Your Courses</h2>
+    <div class="course-grid" id="courseGrid"></div>
   </div>
 </div>
 
+<!-- CLASSROOM -->
 <div id="classroom">
   <div id="hand-raise-notification">✋ Someone raised their hand!</div>
-  <h2 id="roomTitle">Live Classroom</h2>
+  <h2>Live Classroom - <span id="currentLessonTitle"></span></h2>
 
   <div id="participants"></div>
 
-  <div id="chat">
-    <div id="messages"></div>
+  <div id="classroom-chat">
+    <div id="chat-messages"></div>
     <div id="chat-input-area">
       <input type="text" id="chat-input" placeholder="Type your message...">
       <button onclick="sendChatMessage()">Send</button>
     </div>
   </div>
 
-  <div style="margin-top: 20px; text-align: center;">
-    <button onclick="startCamera()">📷 Start My Camera</button>
-    <button onclick="shareScreen()">🖥️ Share Screen</button>
-    <button onclick="raiseHand()">✋ Raise Hand</button>
-    <button id="exitBtn" onclick="exitClass()">Leave Class</button>
+  <br><br>
+  <div style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center;">
+    <button onclick="startCamera()">Start My Camera</button>
+    <button onclick="shareScreen()">Share Screen</button>
+    <button onclick="raiseHand()">Raise Hand ✋</button>
+    <button id="exitBtn" onclick="exitClass()"></button>
   </div>
 </div>
 
@@ -255,85 +184,141 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.js"></script>
 
 <script>
-  // ---------- Global Variables ----------
+  // ================== SOCKET CONNECTION ==================
+  // Use your backend URL explicitly
+  const BACKEND_URL = 'https://next-level-reborn-1777-10.onrender.com';
+  const socket = io(BACKEND_URL);
+
+  // ================== GLOBALS ==================
   let role = "";
   let username = "";
-  let roomCode = null;
+  let currentRoomCode = null;
   let localStream = null;
   let peer = null;
   let myPeerId = null;
-  let connections = {};      // peerId → MediaConnection
-  let dataConnections = {};  // peerId → DataConnection
-  let peerInfo = {};         // peerId → { username, role }
+  let connections = {};        // peerId → MediaConnection
+  let peerInfo = {};           // peerId → { username, role }
   let cameraStarted = false;
+  let uploadedMaterials = [];
 
-  // ---------- Socket Connection (change to your backend URL if needed) ----------
-  const socket = io();   // will auto-connect to same origin if frontend served from backend
-
-  // ---------- UI Helpers ----------
-  function showSignup() {
-    alert("Demo: any username/password works. Sign-up coming soon!");
-  }
-
+  // ================== LOGIN & UI ==================
   function login() {
-    username = document.getElementById("username").value.trim();
+    const user = document.getElementById("username").value.trim();
+    const pass = document.getElementById("password").value;
     role = document.getElementById("role").value;
-    if (!username) return alert("Please enter your name");
 
+    if (!user || !pass) {
+      alert("Please enter username and password");
+      return;
+    }
+
+    username = user;
     document.getElementById("loginPage").style.display = "none";
     document.getElementById("platform").style.display = "block";
+
+    document.getElementById("welcomeMessage").textContent = `Hello ${username}!`;
+    document.getElementById("roleGreeting").textContent = 
+      role === "teacher" ? "You are Teacher" : "You are Student";
 
     if (role === "teacher") {
       document.getElementById("teacherControls").style.display = "block";
     } else {
-      // Student: start polling for classes (simulated via localStorage for now)
-      fetchOngoingClasses();
-      setInterval(fetchOngoingClasses, 3000);
+      // Student: fetch ongoing classes from server
+      socket.emit('get-rooms'); // will be handled by server (broadcast)
+    }
+
+    updateExitButton();
+    renderOngoingClasses(); // initial from localStorage, will be replaced by socket
+  }
+
+  function showSignup() {
+    alert("Sign Up feature coming soon!\n\nFor demo, any username/password works.");
+  }
+
+  function updateExitButton() {
+    const btn = document.getElementById("exitBtn");
+    if (role === "teacher") {
+      btn.textContent = "End Class";
+      btn.className = "end-class";
+      btn.onclick = endClass;
+    } else {
+      btn.textContent = "Leave Class";
+      btn.className = "leave-class";
+      btn.onclick = leaveClass;
     }
   }
 
-  // Simulate ongoing classes via localStorage (teacher creates, student sees)
-  function fetchOngoingClasses() {
-    const saved = localStorage.getItem('ongoingClass');
-    const classes = saved ? JSON.parse(saved) : [];
+  // ================== ONGOING CLASSES (from backend) ==================
+  function renderOngoingClasses(rooms) {
     const grid = document.getElementById("ongoingGrid");
+    const noMsg = document.getElementById("noOngoingMessage");
     grid.innerHTML = "";
-    if (classes.length === 0) {
-      grid.innerHTML = "<div class='course-card'>No ongoing classes at the moment</div>";
+
+    if (!rooms || rooms.length === 0) {
+      noMsg.style.display = "block";
+      grid.style.display = "none";
     } else {
-      classes.forEach(cls => {
+      noMsg.style.display = "none";
+      grid.style.display = "grid";
+      rooms.forEach(room => {
         const card = document.createElement("div");
         card.className = "course-card";
         card.innerHTML = `
-          <h3>${cls.title}</h3>
-          <p>Status: ${cls.status}</p>
-          <button onclick="joinClass('${cls.title}')">Join Class</button>
+          <h3>${room.title}</h3>
+          <p>Teacher: ${room.teacher}</p>
+          <p>Students: ${room.studentsCount}</p>
+          <button onclick="joinClass('${room.code}')">Join Class</button>
         `;
         grid.appendChild(card);
       });
     }
   }
 
-  function startLesson() {
-    const title = document.getElementById("lessonTitle").value.trim();
-    if (!title) return alert("Please enter a lesson title");
-    // Save locally (for student visibility)
-    localStorage.setItem('ongoingClass', JSON.stringify([{ title, status: "Ongoing" }]));
-    document.getElementById("lessonTitle").value = "";
-    alert(`Class "${title}" created! Students can now join.`);
-    // Emit to backend (if you want real sync, uncomment)
-    // socket.emit('create-room', { username, lessonTitle: title });
-    fetchOngoingClasses();
+  function refreshOngoingClasses() {
+    // socket will update automatically via 'room-list' event
   }
 
-  function joinClass(title) {
-    roomCode = title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-    // For demo, just transition to classroom
+  // Socket listens for room list updates
+  socket.on('room-list', (rooms) => {
+    if (role === "student") {
+      renderOngoingClasses(rooms);
+    }
+  });
+
+  // ================== CREATE & JOIN CLASS ==================
+  function startLesson() {
+    const title = document.getElementById("lessonTitle").value.trim();
+    if (!title) {
+      alert("Please enter a lesson title");
+      return;
+    }
+    socket.emit('create-room', { username, lessonTitle: title });
+  }
+
+  socket.on('room-created', (data) => {
+    currentRoomCode = data.roomCode;
+    document.getElementById("currentLessonTitle").textContent = data.lessonTitle;
+    // Switch to classroom view
     document.getElementById("platform").style.display = "none";
     document.getElementById("classroom").style.display = "block";
-    document.getElementById("roomTitle").innerHTML = `Live Classroom: ${title}`;
+    // Initialize PeerJS after entering classroom
+    initPeer();
+  });
 
-    // Initialize PeerJS (use a cloud PeerJS server)
+  function joinClass(roomCode) {
+    currentRoomCode = roomCode;
+    socket.emit('join-room', { username, roomCode });
+  }
+
+  socket.on('room-info', (data) => {
+    document.getElementById("currentLessonTitle").textContent = data.lessonTitle;
+    document.getElementById("platform").style.display = "none";
+    document.getElementById("classroom").style.display = "block";
+    initPeer();
+  });
+
+  // ================== PEERJS SETUP ==================
+  function initPeer() {
     peer = new Peer(undefined, {
       host: '0.peerjs.com',
       port: 443,
@@ -348,47 +333,51 @@
       }
     });
 
-    peer.on('open', id => {
+    peer.on('open', (id) => {
       myPeerId = id;
       console.log('My Peer ID:', id);
-      // Simulate signaling – in a real app you'd use socket.io to exchange IDs.
-      // For demo, we'll just display a prompt to copy the ID manually (quick workaround)
-      alert(`Your Peer ID: ${id}\nShare this with others to connect.\nFor demo, both users should paste each other's IDs.`);
-      // For simplicity, we'll just have a manual input to connect to another peer.
-      const otherId = prompt("Enter the Peer ID of the other participant (teacher or student):");
-      if (otherId) connectToPeer(otherId);
+      // Share my Peer ID with everyone in the room
+      socket.emit('share-peer-id', { roomCode: currentRoomCode, peerId: id });
     });
 
-    peer.on('call', call => {
+    peer.on('call', (call) => {
       if (localStream) {
         call.answer(localStream);
         setupCall(call);
       } else {
-        pendingCalls[call.peer] = call;
+        // Store call for later
+        window.pendingCalls = window.pendingCalls || {};
+        window.pendingCalls[call.peer] = call;
       }
     });
 
-    peer.on('connection', conn => {
+    peer.on('connection', (conn) => {
       setupDataConnection(conn);
     });
   }
 
-  // Manual connection (for demo)
-  function connectToPeer(peerId) {
+  // When we receive a new peer ID from socket, connect to them
+  socket.on('new-peer', ({ peerId, senderId }) => {
+    console.log('New peer joined:', peerId);
+    // Connect data channel
+    const conn = peer.connect(peerId);
+    setupDataConnection(conn);
+    // If we have local stream, call them
     if (localStream) {
       const call = peer.call(peerId, localStream);
       setupCall(call);
+    } else {
+      window.pendingCalls = window.pendingCalls || {};
+      window.pendingCalls[peerId] = { type: 'call', peerId };
     }
-    const conn = peer.connect(peerId);
-    setupDataConnection(conn);
-  }
+  });
 
   function setupDataConnection(conn) {
     conn.on('open', () => {
-      console.log('Data connection open to', conn.peer);
+      console.log('Data connection open with', conn.peer);
       conn.send({ type: 'info', username, role });
     });
-    conn.on('data', data => {
+    conn.on('data', (data) => {
       if (data.type === 'info') {
         peerInfo[conn.peer] = { username: data.username, role: data.role };
         updateVideoLabel(conn.peer);
@@ -399,11 +388,10 @@
         showHandNotification(data.sender);
       }
     });
-    dataConnections[conn.peer] = conn;
   }
 
   function setupCall(call) {
-    call.on('stream', remoteStream => {
+    call.on('stream', (remoteStream) => {
       displayRemoteVideo(call.peer, remoteStream);
     });
     connections[call.peer] = call;
@@ -418,7 +406,7 @@
     wrapper.id = `remote-${peerId}`;
 
     const video = document.createElement("video");
-    video.className = "participant-video student-video"; // will adjust later
+    video.className = "participant-video";
     video.autoplay = true;
     video.playsInline = true;
     video.srcObject = stream;
@@ -427,7 +415,7 @@
     const label = document.createElement("div");
     label.className = "participant-label";
     const info = peerInfo[peerId] || { username: "Participant", role: "student" };
-    label.textContent = `${info.username} (${info.role === "teacher" ? "👩‍🏫 Teacher" : "👨‍🎓 Student"})`;
+    label.textContent = `${info.username} (${info.role === "teacher" ? "Teacher" : "Student"})`;
 
     const controls = document.createElement("div");
     controls.className = "participant-controls";
@@ -465,8 +453,7 @@
     if (wrapper && peerInfo[peerId]) {
       const label = wrapper.querySelector('.participant-label');
       if (label) {
-        const info = peerInfo[peerId];
-        label.textContent = `${info.username} (${info.role === "teacher" ? "👩‍🏫 Teacher" : "👨‍🎓 Student"})`;
+        label.textContent = `${peerInfo[peerId].username} (${peerInfo[peerId].role === "teacher" ? "Teacher" : "Student"})`;
       }
       const video = wrapper.querySelector('video');
       if (video) {
@@ -476,57 +463,93 @@
     }
   }
 
-  // ---------- Camera & Screen ----------
+  // ================== CAMERA & SCREEN ==================
   function startCamera() {
-    if (cameraStarted) return alert("Camera already running");
+    if (cameraStarted) {
+      alert("Camera already active");
+      return;
+    }
     cameraStarted = true;
-    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-      .then(stream => {
-        localStream = stream;
-        const wrapper = document.createElement("div");
-        wrapper.className = "participant-wrapper";
 
-        const video = document.createElement("video");
-        video.className = "participant-video " + (role === "teacher" ? "teacher-video" : "student-video");
-        video.autoplay = true;
-        video.muted = true;
-        video.srcObject = stream;
-        video.onclick = () => wrapper.classList.toggle('expanded');
+    navigator.mediaDevices.getUserMedia({
+      video: true,
+      audio: { echoCancellation: true, noiseSuppression: true }
+    })
+    .then(stream => {
+      localStream = stream;
 
-        const label = document.createElement("div");
-        label.className = "participant-label";
-        label.textContent = `${username} (${role === "teacher" ? "👩‍🏫 Teacher" : "👨‍🎓 Student"} - You)`;
+      const wrapper = document.createElement("div");
+      wrapper.className = "participant-wrapper";
 
-        const controls = document.createElement("div");
-        controls.className = "participant-controls";
+      const video = document.createElement("video");
+      video.className = "participant-video " + (role === "teacher" ? "teacher-video" : "student-video");
+      video.autoplay = true;
+      video.playsInline = true;
+      video.muted = true; // prevent echo
+      video.srcObject = stream;
+      video.onclick = () => wrapper.classList.toggle('expanded');
 
-        const muteBtn = document.createElement("button");
-        muteBtn.className = "mute-btn";
-        muteBtn.textContent = "Mute My Mic";
-        muteBtn.onclick = () => {
-          const audioTrack = stream.getAudioTracks()[0];
-          if (audioTrack) {
-            audioTrack.enabled = !audioTrack.enabled;
-            muteBtn.textContent = audioTrack.enabled ? "Mute My Mic" : "Unmute My Mic";
+      const label = document.createElement("div");
+      label.className = "participant-label";
+      label.textContent = role === "teacher" ? "Teacher (You)" : `${username} (You)`;
+
+      const controls = document.createElement("div");
+      controls.className = "participant-controls";
+
+      const muteBtn = document.createElement("button");
+      muteBtn.className = "mute-btn";
+      muteBtn.textContent = "Mute My Mic";
+      muteBtn.onclick = () => {
+        const audioTracks = stream.getAudioTracks();
+        if (audioTracks.length > 0) {
+          const enabled = !audioTracks[0].enabled;
+          audioTracks[0].enabled = enabled;
+          muteBtn.textContent = enabled ? "Mute My Mic" : "Unmute My Mic";
+        }
+      };
+
+      const volumeSlider = document.createElement("input");
+      volumeSlider.type = "range";
+      volumeSlider.min = 0;
+      volumeSlider.max = 1;
+      volumeSlider.step = 0.1;
+      volumeSlider.value = 1;
+      volumeSlider.oninput = () => video.volume = volumeSlider.value;
+
+      controls.appendChild(muteBtn);
+      controls.appendChild(volumeSlider);
+      wrapper.appendChild(video);
+      wrapper.appendChild(label);
+      wrapper.appendChild(controls);
+      document.getElementById("participants").appendChild(wrapper);
+
+      // After camera starts, call any pending peers
+      if (window.pendingCalls) {
+        Object.keys(window.pendingCalls).forEach(peerId => {
+          const call = window.pendingCalls[peerId];
+          if (call && typeof call.answer === 'function') {
+            call.answer(stream);
+            setupCall(call);
+          } else if (call && call.type === 'call') {
+            const newCall = peer.call(peerId, stream);
+            setupCall(newCall);
           }
-        };
+          delete window.pendingCalls[peerId];
+        });
+      }
 
-        const volumeSlider = document.createElement("input");
-        volumeSlider.type = "range";
-        volumeSlider.min = 0;
-        volumeSlider.max = 1;
-        volumeSlider.step = 0.1;
-        volumeSlider.value = 1;
-        volumeSlider.oninput = () => video.volume = volumeSlider.value;
-
-        controls.appendChild(muteBtn);
-        controls.appendChild(volumeSlider);
-        wrapper.appendChild(video);
-        wrapper.appendChild(label);
-        wrapper.appendChild(controls);
-        document.getElementById("participants").appendChild(wrapper);
-      })
-      .catch(err => alert("Camera error: " + err.message));
+      // Also call all already connected data peers
+      Object.keys(connections).forEach(peerId => {
+        if (!connections[peerId] && peerId !== myPeerId) {
+          const call = peer.call(peerId, stream);
+          setupCall(call);
+        }
+      });
+    })
+    .catch(err => {
+      alert("Camera error: " + err.message);
+      cameraStarted = false;
+    });
   }
 
   function shareScreen() {
@@ -534,95 +557,124 @@
       .then(stream => {
         const wrapper = document.createElement("div");
         wrapper.className = "participant-wrapper";
+
         const video = document.createElement("video");
+        video.className = "participant-video";
         video.autoplay = true;
         video.srcObject = stream;
         video.onclick = () => wrapper.classList.toggle('expanded');
+
         const label = document.createElement("div");
         label.className = "participant-label";
-        label.textContent = `${username} (Screen)`;
+        label.textContent = `${username} (Screen Share)`;
+
         wrapper.appendChild(video);
         wrapper.appendChild(label);
         document.getElementById("participants").appendChild(wrapper);
       })
-      .catch(err => alert("Screen share failed"));
+      .catch(err => alert("Screen share failed: " + err.message));
   }
 
-  // ---------- Chat ----------
+  // ================== CHAT & HAND ==================
   function sendChatMessage() {
     const input = document.getElementById("chat-input");
     const text = input.value.trim();
-    if (!text) return;
+    if (!text || !currentRoomCode) return;
+    socket.emit('chat', { roomCode: currentRoomCode, username, message: text });
     addChatMessage(username, text, role);
-    // Broadcast to all data connections
-    Object.values(dataConnections).forEach(dc => {
-      dc.send({ type: 'chat', sender: username, text, role });
-    });
     input.value = "";
   }
 
+  socket.on('chat', (data) => {
+    // Determine sender role (for styling)
+    const senderRole = data.username === username ? role : (peerInfo[Object.keys(peerInfo)[0]]?.username === data.username ? peerInfo[Object.keys(peerInfo)[0]].role : 'student');
+    addChatMessage(data.username, data.message, senderRole);
+  });
+
   function addChatMessage(sender, text, senderRole) {
-    const div = document.getElementById("messages");
+    const messagesDiv = document.getElementById("chat-messages");
     const msgDiv = document.createElement("div");
     msgDiv.className = `chat-message ${senderRole}`;
     const label = senderRole === "teacher" ? "Teacher" : (senderRole === "student" ? "Student" : "System");
     msgDiv.innerHTML = `<strong>${label}:</strong> ${text}`;
-    div.appendChild(msgDiv);
-    div.scrollTop = div.scrollHeight;
+    messagesDiv.appendChild(msgDiv);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
   }
 
-  // ---------- Raise Hand ----------
   function raiseHand() {
-    const notification = document.getElementById("hand-raise-notification");
-    notification.textContent = `✋ ${username} raised their hand!`;
-    notification.style.display = "block";
-    setTimeout(() => notification.style.display = "none", 5000);
+    if (!currentRoomCode) return;
+    socket.emit('raise-hand', { roomCode: currentRoomCode, username });
     addChatMessage(username, "raised hand ✋", role);
-    // Broadcast to all
-    Object.values(dataConnections).forEach(dc => {
-      dc.send({ type: 'hand', sender: username, role });
-    });
   }
+
+  socket.on('hand-raised', (data) => {
+    addChatMessage(data.username, "raised hand ✋", 'student');
+    showHandNotification(data.username);
+  });
 
   function showHandNotification(sender) {
-    const notification = document.getElementById("hand-raise-notification");
-    notification.textContent = `✋ ${sender} raised their hand!`;
-    notification.style.display = "block";
-    setTimeout(() => notification.style.display = "none", 5000);
+    const notif = document.getElementById("hand-raise-notification");
+    notif.textContent = `✋ ${sender} raised their hand!`;
+    notif.style.display = "block";
+    setTimeout(() => notif.style.display = "none", 5000);
   }
 
-  // ---------- Exit / End Class ----------
-  function exitClass() {
-    if (role === "teacher") {
-      if (confirm("End class for everyone?")) {
-        localStorage.removeItem('ongoingClass'); // remove from student view
-        if (peer) peer.destroy();
-        if (localStream) localStream.getTracks().forEach(t => t.stop());
-        location.reload();
-      }
+  // ================== EXIT ==================
+  function leaveClass() {
+    if (localStream) localStream.getTracks().forEach(t => t.stop());
+    if (peer) peer.destroy();
+    document.getElementById("participants").innerHTML = "";
+    document.getElementById("chat-messages").innerHTML = "";
+    document.getElementById("classroom").style.display = "none";
+    document.getElementById("platform").style.display = "block";
+    cameraStarted = false;
+    currentRoomCode = null;
+  }
+
+  function endClass() {
+    if (role !== "teacher") return;
+    socket.emit('end-class', { roomCode: currentRoomCode });
+    leaveClass();
+  }
+
+  // ================== MATERIALS (demo) ==================
+  function uploadMaterial() {
+    const title = document.getElementById("materialTitle").value.trim();
+    const file = document.getElementById("fileUpload").files[0];
+    if (!title || !file) return alert("Enter title and select file");
+    const url = URL.createObjectURL(file);
+    uploadedMaterials.push({ title, url, type: file.type, filename: file.name });
+    document.getElementById("materialTitle").value = "";
+    document.getElementById("fileUpload").value = "";
+    renderMaterials();
+  }
+
+  function renderMaterials() {
+    const grid = document.getElementById("materialsGrid");
+    const noMsg = document.getElementById("noMaterialsMessage");
+    grid.innerHTML = "";
+    if (uploadedMaterials.length === 0) {
+      noMsg.style.display = "block";
+      grid.style.display = "none";
     } else {
-      if (confirm("Leave this class?")) {
-        if (peer) peer.destroy();
-        if (localStream) localStream.getTracks().forEach(t => t.stop());
-        location.reload();
-      }
+      noMsg.style.display = "none";
+      grid.style.display = "grid";
+      uploadedMaterials.forEach(mat => {
+        const card = document.createElement("div");
+        card.className = "course-card";
+        let content = `<h3>${mat.title}</h3>`;
+        if (mat.type.startsWith('video/')) {
+          content += `<video controls><source src="${mat.url}"></video>`;
+        } else if (mat.type.startsWith('image/')) {
+          content += `<img src="${mat.url}" alt="${mat.title}">`;
+        } else {
+          content += `<p>File: ${mat.filename}</p><a href="${mat.url}" target="_blank">Download</a>`;
+        }
+        card.innerHTML = content;
+        grid.appendChild(card);
+      });
     }
   }
-
-  // Update exit button based on role
-  function updateExitButton() {
-    const btn = document.getElementById("exitBtn");
-    if (role === "teacher") {
-      btn.textContent = "End Class";
-      btn.className = "end-class";
-    } else {
-      btn.textContent = "Leave Class";
-      btn.className = "leave-class";
-    }
-  }
-
-  // Call on load
-  updateExitButton();
 </script>
 </body>
 </html>
