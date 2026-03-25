@@ -13,89 +13,25 @@
   }
   .login-box {
     background:rgba(255,255,255,0.92); color:#111; padding:50px 40px; border-radius:16px;
-    text-align:center; box-shadow:0 8px 30px rgba(0,0,0,0.4); backdrop-filter:blur(6px);
-    max-width:380px; width:90%;
+    text-align:center; box-shadow:0 8px 30px rgba(0,0,0,0.4);
   }
-  .login-box h2 { margin-bottom:30px; color:#2c3ea8; }
-  .login-box input, .login-box select {
-    padding:14px; margin:14px 0; width:100%; max-width:280px;
-    border:1px solid #aaa; border-radius:8px; font-size:16px; box-sizing:border-box;
-  }
+  .login-box input, .login-box select { padding:14px; margin:10px 0; width:100%; max-width:280px; border-radius:8px; }
   .signup-link { margin-top:15px; color:#2c3ea8; cursor:pointer; text-decoration:underline; }
 
-  .welcome-hero { position:relative; height:70vh; min-height:500px; overflow:hidden;
-    display:flex; align-items:center; justify-content:center; text-align:center; color:white; }
-  .hero-image { position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; z-index:1; }
-  .hero-overlay { position:relative; z-index:2; background:rgba(0,0,0,0.55); padding:40px 60px;
-    border-radius:16px; max-width:90%; }
-  .welcome-hero h1 { font-size:3.8rem; margin:0 0 16px; text-shadow:2px 2px 10px rgba(0,0,0,0.7); }
-  .welcome-hero p { font-size:1.6rem; margin:10px 0; text-shadow:1px 1px 5px rgba(0,0,0,0.6); }
-  #roleGreeting { font-size:1.45rem; font-weight:bold; margin-top:16px; }
-
-  .dashboard { padding:30px; max-width:1400px; margin:0 auto; }
-  h2 { color:#2c3ea8; margin-bottom:20px; }
-  .course-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:24px; margin-top:20px; }
-  .course-card {
-    padding:20px; border-radius:16px; color:white; background:linear-gradient(135deg,#5a6bff,#7a9cff);
-    box-shadow:0 6px 15px rgba(0,0,0,0.18); transition:transform 0.2s;
-  }
-  .course-card:hover { transform:translateY(-6px); }
-  .no-content { text-align:center; padding:40px 20px; background:white; border-radius:12px;
-    box-shadow:0 4px 12px rgba(0,0,0,0.1); font-size:1.2rem; color:#555; }
-
-  button { padding:12px 24px; background:#2c3ea8; color:white; border:none; border-radius:8px;
-    cursor:pointer; font-size:16px; transition:background 0.2s; margin:5px; }
-  button:hover { background:#1c2c80; }
-  button.end-class { background:#d32f2f; }
-  button.end-class:hover { background:#b71c1c; }
-  button.leave-class { background:#ff9800; }
-  button.leave-class:hover { background:#e68900; }
-
-  .start-lesson-box, .upload-box { margin:30px 0; padding:24px; background:white; border-radius:12px;
-    box-shadow:0 4px 12px rgba(0,0,0,0.1); }
-  .start-lesson-box input, .upload-box input { display:block; margin:12px 0; padding:10px; width:100%; max-width:400px; }
-
   #classroom { display:none; padding:30px; background:#f8f9fc; }
-  #participants { display:flex; flex-wrap:wrap; gap:20px; justify-content:center; margin:25px 0; }
-  .participant-wrapper {
-    flex:0 1 auto; width:280px; text-align:center; background:#fff; border-radius:12px; padding:10px;
-    box-shadow:0 2px 8px rgba(0,0,0,0.1); transition:all 0.3s;
-  }
-  .participant-wrapper.expanded { width:100%; max-width:800px; margin:10px auto; }
-  .participant-video {
-    width:100%; height:auto; aspect-ratio:4/3; border-radius:8px;
-    object-fit:cover; background:#000; cursor:pointer;
-  }
-  .teacher-video { border:4px solid #2196f3; }
-  .student-video { border:4px solid #4caf50; }
-  .participant-label { margin-top:8px; font-weight:bold; }
-  .participant-controls { display:flex; justify-content:center; gap:10px; margin-top:5px; }
-  .mute-btn { background:#ff5722; padding:6px 12px; font-size:14px; }
-  .volume-slider { width:80px; }
-
-  #classroom-chat { margin-top:35px; max-width:900px; margin-left:auto; margin-right:auto; }
-  #chat-messages { border:1px solid #ccc; border-radius:12px; padding:18px; height:260px; overflow-y:auto;
-    background:#fff; text-align:left; margin-bottom:15px; }
-  .chat-message { margin:10px 0; padding:12px; border-radius:10px; }
-  .chat-message.teacher { background:#fff3e0; font-weight:bold; }
-  .chat-message.student { background:#e3f2fd; }
-  #hand-raise-notification {
-    position:fixed; top:20px; left:50%; transform:translateX(-50%);
-    background:#ff5722; color:white; padding:14px 28px; border-radius:30px; font-weight:bold;
-    box-shadow:0 4px 14px rgba(0,0,0,0.35); display:none; z-index:1000;
-  }
-  #chat-input-area { display:flex; gap:12px; }
-  #chat-input { flex:1; padding:14px; border:1px solid #ccc; border-radius:10px; font-size:16px; }
+  #participants { display:flex; flex-wrap:wrap; gap:15px; justify-content:center; }
+  .participant-wrapper { width:300px; text-align:center; }
+  .participant-video { width:100%; border-radius:8px; border:3px solid #ccc; }
+  .teacher-video { border-color:#2196f3; }
+  .student-video { border-color:#4caf50; }
 </style>
 </head>
 <body>
 
-<!-- LOGIN PAGE -->
 <div id="loginPage">
   <div class="login-box">
     <h2>Next Level Academy</h2>
-    <input type="text" id="username" placeholder="Username"><br>
-    <input type="password" id="password" placeholder="Password"><br>
+    <input type="text" id="username" placeholder="Username"><br><br>
     <select id="role">
       <option value="student">Student</option>
       <option value="teacher">Teacher</option>
@@ -105,334 +41,107 @@
   </div>
 </div>
 
-<!-- MAIN PLATFORM -->
-<div id="platform" style="display:none">
-  <div class="welcome-hero">
-    <img src="https://i.postimg.cc/Hn7sYpZJ/next-level-7.png" alt="Next Level Academy" class="hero-image">
-    <div class="hero-overlay">
-      <h1>Welcome to Next Level Academy</h1>
-      <p id="welcomeMessage">Interactive Online Learning Platform</p>
-      <p id="roleGreeting"></p>
-    </div>
-  </div>
-
-  <div class="dashboard">
-    <h2>Ongoing Classes</h2>
-    <div id="ongoingClassesContainer">
-      <div class="course-grid" id="ongoingGrid"></div>
-      <div id="noOngoingMessage" class="no-content" style="display:none;">
-        No ongoing classes at the moment<br><br>
-        <button onclick="refreshOngoingClasses()">Refresh Classes</button>
-      </div>
-    </div>
-
-    <div id="materialsSection">
-      <h2>Uploaded Materials</h2>
-      <div id="materialsContainer">
-        <div class="course-grid" id="materialsGrid"></div>
-        <div id="noMaterialsMessage" class="no-content" style="display:none;">
-          No academic materials uploaded yet
-        </div>
-      </div>
-    </div>
-
-    <div id="teacherControls" style="display:none;">
-      <div class="start-lesson-box">
-        <h3>Start a Lesson</h3>
-        <input type="text" id="lessonTitle" placeholder="Lesson Title (e.g. Fractions - Grade 7)">
-        <button onclick="startLesson()">Start Lesson</button>
-      </div>
-
-      <div class="upload-box">
-        <h3>Upload Material</h3>
-        <input type="text" id="materialTitle" placeholder="Material Title">
-        <input type="file" id="fileUpload" accept="video/*,image/*,.pdf">
-        <button onclick="uploadMaterial()">Upload</button>
-      </div>
-    </div>
-
-    <h2>Your Courses</h2>
-    <div class="course-grid" id="courseGrid"></div>
-  </div>
-</div>
-
-<!-- CLASSROOM -->
 <div id="classroom">
-  <div id="hand-raise-notification">✋ Someone raised their hand!</div>
-  <h2>Live Classroom - <span id="currentLessonTitle"></span></h2>
-
+  <h2 id="roomTitle">Live Classroom</h2>
   <div id="participants"></div>
 
-  <div id="classroom-chat">
-    <div id="chat-messages"></div>
-    <div id="chat-input-area">
-      <input type="text" id="chat-input" placeholder="Type your message...">
-      <button onclick="sendChatMessage()">Send</button>
-    </div>
-  </div>
-
-  <br><br>
-  <div style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center;">
+  <div style="margin:20px 0;">
     <button onclick="startCamera()">Start My Camera</button>
     <button onclick="shareScreen()">Share Screen</button>
     <button onclick="raiseHand()">Raise Hand ✋</button>
-    <button id="exitBtn" onclick="exitClass()"></button>
+    <button id="exitBtn" onclick="exitClass()">Leave Class</button>
+  </div>
+
+  <div id="chat">
+    <div id="messages" style="height:200px; overflow-y:auto; border:1px solid #ccc; padding:10px;"></div>
+    <input id="chatInput" placeholder="Type message..." style="width:70%; padding:10px;">
+    <button onclick="sendMessage()">Send</button>
   </div>
 </div>
 
+<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.js"></script>
+
 <script>
-  let role = "";
+  const socket = io(); // Connects to your Render backend
+
+  let role = "", username = "", roomCode = null;
   let localStream = null;
-  let cameraStarted = false;
-  let currentUsername = "";
-  let roomCode = null;
+  let peer = null;
 
   function login() {
-    const user = document.getElementById("username").value.trim();
-    const pass = document.getElementById("password").value;
+    username = document.getElementById("username").value.trim();
     role = document.getElementById("role").value;
 
-    if (!user || !pass) {
-      alert("Please enter username and password");
-      return;
-    }
+    if (!username) return alert("Enter username");
 
-    currentUsername = user;
     document.getElementById("loginPage").style.display = "none";
-    document.getElementById("platform").style.display = "block";
-
-    document.getElementById("welcomeMessage").textContent = `Hello ${currentUsername}!`;
-    document.getElementById("roleGreeting").textContent = 
-      role === "teacher" ? "You are Teacher" : "You are Student";
+    document.getElementById("classroom").style.display = "block";
 
     if (role === "teacher") {
-      document.getElementById("teacherControls").style.display = "block";
+      const title = prompt("Enter Lesson Title:");
+      if (title) socket.emit('create-room', { username, lessonTitle: title });
     } else {
-      renderOngoingClasses(); // Student sees ongoing classes automatically
+      // Student waits for class to appear
+      document.getElementById("roomTitle").textContent = "Waiting for ongoing class...";
     }
-
-    updateExitButton();
   }
 
   function showSignup() {
-    alert("Sign Up feature is coming soon!\n\nFor demo, any username and password works.");
+    alert("Sign Up coming soon! Use any username for demo.");
   }
 
-  function updateExitButton() {
-    const btn = document.getElementById("exitBtn");
-    if (role === "teacher") {
-      btn.textContent = "End Class";
-      btn.className = "end-class";
-      btn.onclick = endClass;
-    } else {
-      btn.textContent = "Leave Class";
-      btn.className = "leave-class";
-      btn.onclick = exitClass;
-    }
-  }
+  socket.on('room-created', (data) => {
+    roomCode = data.roomCode;
+    document.getElementById("roomTitle").textContent = `Room: ${data.lessonTitle}`;
+    document.getElementById("exitBtn").textContent = "End Class";
+    document.getElementById("exitBtn").className = "end-class";
+  });
 
-  function startLesson() {
-    const title = document.getElementById("lessonTitle").value.trim();
-    if (!title) {
-      alert("Please enter a lesson title");
-      return;
-    }
-    // Save locally for demo (in real backend this would be sent to server)
-    saveOngoingClass([{ title, status: "Ongoing" }]);
-    document.getElementById("lessonTitle").value = "";
-    renderOngoingClasses();
-    alert("Lesson started! Students can now see it.");
-  }
-
-  function renderOngoingClasses() {
-    const ongoing = loadOngoingClass();
-    const grid = document.getElementById("ongoingGrid");
-    const noMsg = document.getElementById("noOngoingMessage");
-    grid.innerHTML = "";
-
-    if (ongoing.length === 0) {
-      noMsg.style.display = "block";
-      grid.style.display = "none";
-    } else {
-      noMsg.style.display = "none";
-      grid.style.display = "grid";
-      ongoing.forEach(cls => {
-        const card = document.createElement("div");
-        card.className = "course-card";
-        card.innerHTML = `
-          <h3>${cls.title}</h3>
-          <p>Status: ${cls.status}</p>
-          <button onclick="joinClass()">Join Class</button>
-        `;
-        grid.appendChild(card);
-      });
-    }
-  }
-
-  function refreshOngoingClasses() {
-    renderOngoingClasses();
-  }
-
-  function joinClass() {
-    const ongoing = loadOngoingClass();
-    if (ongoing.length === 0) {
-      alert("No active class to join.");
-      return;
-    }
-
-    document.getElementById("currentLessonTitle").textContent = ongoing[0].title;
-    document.getElementById("platform").style.display = "none";
-    document.getElementById("classroom").style.display = "block";
-
-    addChatMessage("System", `Joined live class: ${ongoing[0].title}`, "system");
-  }
+  socket.on('room-info', (data) => {
+    roomCode = data.roomCode;
+    document.getElementById("roomTitle").textContent = `Room: ${data.lessonTitle}`;
+  });
 
   function startCamera() {
-    if (cameraStarted) {
-      alert("Your camera is already active.");
-      return;
-    }
-    cameraStarted = true;
-
-    navigator.mediaDevices.getUserMedia({
-      video: true,
-      audio: { echoCancellation: true, noiseSuppression: true }
-    })
-    .then(stream => {
-      localStream = stream;
-
-      const wrapper = document.createElement("div");
-      wrapper.className = "participant-wrapper";
-
-      const video = document.createElement("video");
-      video.className = "participant-video " + (role === "teacher" ? "teacher-video" : "student-video");
-      video.autoplay = true;
-      video.playsinline = true;
-      video.muted = true;
-      video.srcObject = stream;
-
-      video.addEventListener('click', () => wrapper.classList.toggle('expanded'));
-
-      const label = document.createElement("div");
-      label.className = "participant-label";
-      label.textContent = role === "teacher" ? "Teacher (You)" : `${currentUsername} (You)`;
-
-      const controls = document.createElement("div");
-      controls.className = "participant-controls";
-
-      const muteBtn = document.createElement("button");
-      muteBtn.className = "mute-btn";
-      muteBtn.textContent = "Mute My Mic";
-      muteBtn.onclick = () => {
-        const audioTracks = stream.getAudioTracks();
-        if (audioTracks.length > 0) {
-          const enabled = !audioTracks[0].enabled;
-          audioTracks[0].enabled = enabled;
-          muteBtn.textContent = enabled ? "Mute My Mic" : "Unmute My Mic";
-        }
-      };
-
-      const volumeSlider = document.createElement("input");
-      volumeSlider.type = "range";
-      volumeSlider.min = 0;
-      volumeSlider.max = 1;
-      volumeSlider.step = 0.1;
-      volumeSlider.value = 1;
-      volumeSlider.oninput = () => video.volume = volumeSlider.value;
-
-      controls.append(muteBtn, volumeSlider);
-      wrapper.append(video, label, controls);
-      document.getElementById("participants").appendChild(wrapper);
-    })
-    .catch(err => {
-      alert("Camera access denied: " + err.message);
-      cameraStarted = false;
-    });
-  }
-
-  function shareScreen() {
-    navigator.mediaDevices.getDisplayMedia({ video: true })
+    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
       .then(stream => {
-        const wrapper = document.createElement("div");
-        wrapper.className = "participant-wrapper";
-
-        const video = document.createElement("video");
-        video.className = "participant-video";
+        localStream = stream;
+        const video = document.createElement('video');
         video.autoplay = true;
+        video.muted = true;
         video.srcObject = stream;
-
-        video.addEventListener('click', () => wrapper.classList.toggle('expanded'));
-
-        const label = document.createElement("div");
-        label.className = "participant-label";
-        label.textContent = `${currentUsername} (Screen Share)`;
-
-        wrapper.append(video, label);
-        document.getElementById("participants").appendChild(wrapper);
+        document.getElementById("participants").appendChild(video);
       })
-      .catch(err => alert("Screen share failed: " + err.message));
+      .catch(err => alert("Camera error"));
   }
+
+  function sendMessage() {
+    const msg = document.getElementById("chatInput").value.trim();
+    if (!msg || !roomCode) return;
+    socket.emit('chat', { roomCode, username, message: msg });
+    document.getElementById("chatInput").value = "";
+  }
+
+  socket.on('chat', (data) => {
+    const div = document.createElement('div');
+    div.textContent = `${data.username}: ${data.message}`;
+    document.getElementById("messages").appendChild(div);
+  });
 
   function raiseHand() {
-    const notification = document.getElementById("hand-raise-notification");
-    notification.textContent = `✋ ${currentUsername} raised their hand!`;
-    notification.style.display = "block";
-    setTimeout(() => notification.style.display = "none", 8000);
-
-    addChatMessage(currentUsername, "raised hand ✋", role);
-  }
-
-  function addChatMessage(sender, text, senderRole) {
-    const messagesDiv = document.getElementById("chat-messages");
-    const msgDiv = document.createElement("div");
-    msgDiv.className = `chat-message ${senderRole}`;
-    const label = senderRole === "teacher" ? "Teacher" : "Student";
-    msgDiv.innerHTML = `<strong>${label}:</strong> ${text}`;
-    messagesDiv.appendChild(msgDiv);
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
-  }
-
-  function sendChatMessage() {
-    const input = document.getElementById("chat-input");
-    const text = input.value.trim();
-    if (!text) return;
-
-    addChatMessage(currentUsername, text, role);
-    input.value = "";
+    if (roomCode) socket.emit('raise-hand', { roomCode, username });
   }
 
   function exitClass() {
-    if (localStream) localStream.getTracks().forEach(track => track.stop());
-    document.getElementById("participants").innerHTML = "";
-    document.getElementById("chat-messages").innerHTML = "";
-    document.getElementById("classroom").style.display = "none";
-    document.getElementById("platform").style.display = "block";
-    cameraStarted = false;
+    if (localStream) localStream.getTracks().forEach(t => t.stop());
+    location.reload();
   }
 
-  function endClass() {
-    if (role !== "teacher") return;
-    saveOngoingClass([]);
-    renderOngoingClasses();
-    exitClass();
-  }
-
-  // Ongoing class helpers (localStorage for demo)
-  function loadOngoingClass() {
-    const saved = localStorage.getItem('ongoingClass');
-    return saved ? JSON.parse(saved) : [];
-  }
-
-  function saveOngoingClass(classes) {
-    localStorage.setItem('ongoingClass', JSON.stringify(classes));
-  }
-
-  // Auto-refresh for students
+  // Auto refresh for student to see ongoing class
   setInterval(() => {
-    if (role === "student" && document.getElementById("platform").style.display !== "none") {
-      renderOngoingClasses();
-    }
-  }, 1500);
+    if (role === "student") socket.emit('get-ongoing-classes');
+  }, 3000);
 </script>
 </body>
 </html>
