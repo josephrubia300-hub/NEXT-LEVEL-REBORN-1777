@@ -9,11 +9,26 @@ const io = new Server(server, { cors: { origin: "*" } });
 
 app.use(express.static(path.join(__dirname, '../public')));
 
-// Store rooms and their participants
-const rooms = new Map(); // roomCode → { teacherId, teacherName, students: Set, lessonTitle }
+// Store rooms: roomCode → { teacherId, teacherName, students: Set, lessonTitle }
+const rooms = new Map();
+
+// Broadcast current room list to all connected clients
+function broadcastRoomList() {
+  const roomList = Array.from(rooms.entries()).map(([code, data]) => ({
+    code,
+    title: data.lessonTitle,
+    teacher: data.teacherName,
+    studentsCount: data.students.size
+  }));
+  io.emit('room-list', roomList);
+  console.log('Broadcast room list:', roomList);
+}
 
 io.on('connection', (socket) => {
   console.log(`User connected: ${socket.id}`);
+
+  // Send current room list to the newly connected client
+  broadcastRoomList();
 
   // Teacher creates a room
   socket.on('create-room', ({ username, lessonTitle }) => {
@@ -35,9 +50,8 @@ io.on('connection', (socket) => {
     });
     socket.join(finalCode);
     socket.emit('room-created', { roomCode: finalCode, lessonTitle });
-
-    // Broadcast updated room list to all connected students
-    broadcastRoomList();
+    console.log(`Teacher ${username} created room ${finalCode}`);
+    broadcastRoomList(); // update everyone
   });
 
   // Student joins a room
@@ -48,14 +62,17 @@ io.on('connection', (socket) => {
     room.students.add(socket.id);
     socket.join(roomCode);
     socket.emit('room-info', { lessonTitle: room.lessonTitle, teacherName: room.teacherName });
+    console.log(`Student ${username} joined room ${roomCode}`);
 
-    // Notify teacher that a new student joined
+    // Notify everyone in the room that a new user joined
     io.to(roomCode).emit('user-joined', { username, role: 'student', id: socket.id });
+    broadcastRoomList(); // update room count
   });
 
-  // Share Peer ID with everyone in the room
+  // Share Peer ID with others in the room
   socket.on('share-peer-id', ({ roomCode, peerId }) => {
     socket.to(roomCode).emit('new-peer', { peerId, senderId: socket.id });
+    console.log(`Peer ID ${peerId} shared in room ${roomCode}`);
   });
 
   // WebRTC signaling (offer/answer/ice)
@@ -79,6 +96,7 @@ io.on('connection', (socket) => {
     if (room && room.teacherId === socket.id) {
       io.to(roomCode).emit('room-closed');
       rooms.delete(roomCode);
+      console.log(`Room ${roomCode} ended by teacher`);
       broadcastRoomList();
     }
   });
@@ -87,27 +105,18 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     for (const [roomCode, room] of rooms.entries()) {
       if (room.teacherId === socket.id) {
-        // Teacher left → close room
         io.to(roomCode).emit('room-closed');
         rooms.delete(roomCode);
+        console.log(`Room ${roomCode} closed because teacher disconnected`);
         broadcastRoomList();
       } else if (room.students.has(socket.id)) {
         room.students.delete(socket.id);
         io.to(roomCode).emit('user-left', socket.id);
+        console.log(`User ${socket.id} left room ${roomCode}`);
+        broadcastRoomList();
       }
     }
   });
-
-  // Broadcast current room list to all connected clients (for students to see)
-  function broadcastRoomList() {
-    const roomList = Array.from(rooms.entries()).map(([code, data]) => ({
-      code,
-      title: data.lessonTitle,
-      teacher: data.teacherName,
-      studentsCount: data.students.size
-    }));
-    io.emit('room-list', roomList);
-  }
 });
 
 const PORT = process.env.PORT || 3000;
