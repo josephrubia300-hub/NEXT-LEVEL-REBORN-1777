@@ -57,11 +57,21 @@
 
   #classroom { display:none; padding:30px; background:#f8f9fc; }
   #participants { display:flex; flex-wrap:wrap; gap:20px; justify-content:center; margin:25px 0; }
-  .participant-wrapper { width:280px; text-align:center; background:#fff; border-radius:12px; padding:10px; box-shadow:0 2px 8px rgba(0,0,0,0.1); }
-  .participant-video { width:100%; border-radius:8px; }
+  .participant-wrapper {
+    flex:0 1 auto; width:280px; text-align:center; background:#fff; border-radius:12px; padding:10px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.1); transition:all 0.3s;
+  }
+  .participant-wrapper.expanded { width:100%; max-width:800px; margin:10px auto; }
+  .participant-video {
+    width:100%; height:auto; aspect-ratio:4/3; border-radius:8px;
+    object-fit:cover; background:#000; cursor:pointer;
+  }
   .teacher-video { border:4px solid #2196f3; }
   .student-video { border:4px solid #4caf50; }
   .participant-label { margin-top:8px; font-weight:bold; }
+  .participant-controls { display:flex; justify-content:center; gap:10px; margin-top:5px; }
+  .mute-btn { background:#ff5722; padding:6px 12px; font-size:14px; }
+  .volume-slider { width:80px; }
 
   #classroom-chat { margin-top:35px; max-width:900px; margin-left:auto; margin-right:auto; }
   #chat-messages { border:1px solid #ccc; border-radius:12px; padding:18px; height:260px; overflow-y:auto;
@@ -170,12 +180,7 @@
   </div>
 </div>
 
-<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.js"></script>
-
 <script>
-  const socket = io(); // Connects to your Render backend
-
   let role = "";
   let localStream = null;
   let cameraStarted = false;
@@ -203,118 +208,16 @@
     if (role === "teacher") {
       document.getElementById("teacherControls").style.display = "block";
     } else {
-      // Student automatically sees ongoing classes
-      renderOngoingClasses();
+      renderOngoingClasses(); // Student sees ongoing classes automatically
     }
+
+    updateExitButton();
   }
 
   function showSignup() {
     alert("Sign Up feature is coming soon!\n\nFor demo, any username and password works.");
   }
 
-  function startLesson() {
-    const title = document.getElementById("lessonTitle").value.trim();
-    if (!title) return alert("Enter lesson title");
-    socket.emit('create-room', { username: currentUsername, lessonTitle: title });
-  }
-
-  function renderOngoingClasses() {
-    // Student sees classes automatically (backend will send list)
-    // For now we show the refresh button
-    const grid = document.getElementById("ongoingGrid");
-    const noMsg = document.getElementById("noOngoingMessage");
-    // This will be populated by backend later
-    noMsg.style.display = "block";
-  }
-
-  function refreshOngoingClasses() {
-    renderOngoingClasses();
-  }
-
-  function joinClass() {
-    // This will be called when student clicks on a class
-    // For now, we assume they enter the room code
-    const code = prompt("Enter Room Code:");
-    if (code) {
-      roomCode = code;
-      socket.emit('join-room', { username: currentUsername, roomCode: code });
-      document.getElementById("platform").style.display = "none";
-      document.getElementById("classroom").style.display = "block";
-      document.getElementById("currentLessonTitle").textContent = code;
-    }
-  }
-
-  function startCamera() {
-    if (cameraStarted) return alert("Camera already active");
-    cameraStarted = true;
-
-    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-      .then(stream => {
-        localStream = stream;
-        const wrapper = document.createElement("div");
-        wrapper.className = "participant-wrapper";
-
-        const video = document.createElement("video");
-        video.className = "participant-video " + (role === "teacher" ? "teacher-video" : "student-video");
-        video.autoplay = true;
-        video.muted = true;
-        video.srcObject = stream;
-
-        const label = document.createElement("div");
-        label.className = "participant-label";
-        label.textContent = role === "teacher" ? "Teacher (You)" : `${currentUsername} (You)`;
-
-        wrapper.appendChild(video);
-        wrapper.appendChild(label);
-        document.getElementById("participants").appendChild(wrapper);
-      })
-      .catch(err => alert("Camera error: " + err.message));
-  }
-
-  function shareScreen() {
-    navigator.mediaDevices.getDisplayMedia({ video: true })
-      .then(stream => {
-        const wrapper = document.createElement("div");
-        wrapper.className = "participant-wrapper";
-        const video = document.createElement("video");
-        video.autoplay = true;
-        video.srcObject = stream;
-        const label = document.createElement("div");
-        label.textContent = "Screen Share";
-        wrapper.append(video, label);
-        document.getElementById("participants").appendChild(wrapper);
-      })
-      .catch(err => alert("Screen share failed"));
-  }
-
-  function raiseHand() {
-    if (roomCode) socket.emit('raise-hand', { roomCode, username: currentUsername });
-  }
-
-  function sendChatMessage() {
-    const input = document.getElementById("chat-input");
-    const text = input.value.trim();
-    if (!text) return;
-    if (roomCode) socket.emit('chat', { roomCode, username: currentUsername, message: text });
-    input.value = "";
-  }
-
-  function exitClass() {
-    if (localStream) localStream.getTracks().forEach(t => t.stop());
-    document.getElementById("participants").innerHTML = "";
-    document.getElementById("chat-messages").innerHTML = "";
-    document.getElementById("classroom").style.display = "none";
-    document.getElementById("platform").style.display = "block";
-    cameraStarted = false;
-  }
-
-  function endClass() {
-    if (role !== "teacher") return;
-    socket.emit('end-class', { roomCode });
-    exitClass();
-  }
-
-  // Update exit button based on role
   function updateExitButton() {
     const btn = document.getElementById("exitBtn");
     if (role === "teacher") {
@@ -328,23 +231,208 @@
     }
   }
 
-  // Socket listeners (basic)
-  socket.on('room-created', (data) => {
-    roomCode = data.roomCode;
-    document.getElementById("currentLessonTitle").textContent = data.lessonTitle;
-  });
+  function startLesson() {
+    const title = document.getElementById("lessonTitle").value.trim();
+    if (!title) {
+      alert("Please enter a lesson title");
+      return;
+    }
+    // Save locally for demo (in real backend this would be sent to server)
+    saveOngoingClass([{ title, status: "Ongoing" }]);
+    document.getElementById("lessonTitle").value = "";
+    renderOngoingClasses();
+    alert("Lesson started! Students can now see it.");
+  }
 
-  socket.on('room-info', (data) => {
-    roomCode = data.roomCode;
-    document.getElementById("currentLessonTitle").textContent = data.lessonTitle;
-  });
+  function renderOngoingClasses() {
+    const ongoing = loadOngoingClass();
+    const grid = document.getElementById("ongoingGrid");
+    const noMsg = document.getElementById("noOngoingMessage");
+    grid.innerHTML = "";
 
-  // Auto-refresh for student
+    if (ongoing.length === 0) {
+      noMsg.style.display = "block";
+      grid.style.display = "none";
+    } else {
+      noMsg.style.display = "none";
+      grid.style.display = "grid";
+      ongoing.forEach(cls => {
+        const card = document.createElement("div");
+        card.className = "course-card";
+        card.innerHTML = `
+          <h3>${cls.title}</h3>
+          <p>Status: ${cls.status}</p>
+          <button onclick="joinClass()">Join Class</button>
+        `;
+        grid.appendChild(card);
+      });
+    }
+  }
+
+  function refreshOngoingClasses() {
+    renderOngoingClasses();
+  }
+
+  function joinClass() {
+    const ongoing = loadOngoingClass();
+    if (ongoing.length === 0) {
+      alert("No active class to join.");
+      return;
+    }
+
+    document.getElementById("currentLessonTitle").textContent = ongoing[0].title;
+    document.getElementById("platform").style.display = "none";
+    document.getElementById("classroom").style.display = "block";
+
+    addChatMessage("System", `Joined live class: ${ongoing[0].title}`, "system");
+  }
+
+  function startCamera() {
+    if (cameraStarted) {
+      alert("Your camera is already active.");
+      return;
+    }
+    cameraStarted = true;
+
+    navigator.mediaDevices.getUserMedia({
+      video: true,
+      audio: { echoCancellation: true, noiseSuppression: true }
+    })
+    .then(stream => {
+      localStream = stream;
+
+      const wrapper = document.createElement("div");
+      wrapper.className = "participant-wrapper";
+
+      const video = document.createElement("video");
+      video.className = "participant-video " + (role === "teacher" ? "teacher-video" : "student-video");
+      video.autoplay = true;
+      video.playsinline = true;
+      video.muted = true;
+      video.srcObject = stream;
+
+      video.addEventListener('click', () => wrapper.classList.toggle('expanded'));
+
+      const label = document.createElement("div");
+      label.className = "participant-label";
+      label.textContent = role === "teacher" ? "Teacher (You)" : `${currentUsername} (You)`;
+
+      const controls = document.createElement("div");
+      controls.className = "participant-controls";
+
+      const muteBtn = document.createElement("button");
+      muteBtn.className = "mute-btn";
+      muteBtn.textContent = "Mute My Mic";
+      muteBtn.onclick = () => {
+        const audioTracks = stream.getAudioTracks();
+        if (audioTracks.length > 0) {
+          const enabled = !audioTracks[0].enabled;
+          audioTracks[0].enabled = enabled;
+          muteBtn.textContent = enabled ? "Mute My Mic" : "Unmute My Mic";
+        }
+      };
+
+      const volumeSlider = document.createElement("input");
+      volumeSlider.type = "range";
+      volumeSlider.min = 0;
+      volumeSlider.max = 1;
+      volumeSlider.step = 0.1;
+      volumeSlider.value = 1;
+      volumeSlider.oninput = () => video.volume = volumeSlider.value;
+
+      controls.append(muteBtn, volumeSlider);
+      wrapper.append(video, label, controls);
+      document.getElementById("participants").appendChild(wrapper);
+    })
+    .catch(err => {
+      alert("Camera access denied: " + err.message);
+      cameraStarted = false;
+    });
+  }
+
+  function shareScreen() {
+    navigator.mediaDevices.getDisplayMedia({ video: true })
+      .then(stream => {
+        const wrapper = document.createElement("div");
+        wrapper.className = "participant-wrapper";
+
+        const video = document.createElement("video");
+        video.className = "participant-video";
+        video.autoplay = true;
+        video.srcObject = stream;
+
+        video.addEventListener('click', () => wrapper.classList.toggle('expanded'));
+
+        const label = document.createElement("div");
+        label.className = "participant-label";
+        label.textContent = `${currentUsername} (Screen Share)`;
+
+        wrapper.append(video, label);
+        document.getElementById("participants").appendChild(wrapper);
+      })
+      .catch(err => alert("Screen share failed: " + err.message));
+  }
+
+  function raiseHand() {
+    const notification = document.getElementById("hand-raise-notification");
+    notification.textContent = `✋ ${currentUsername} raised their hand!`;
+    notification.style.display = "block";
+    setTimeout(() => notification.style.display = "none", 8000);
+
+    addChatMessage(currentUsername, "raised hand ✋", role);
+  }
+
+  function addChatMessage(sender, text, senderRole) {
+    const messagesDiv = document.getElementById("chat-messages");
+    const msgDiv = document.createElement("div");
+    msgDiv.className = `chat-message ${senderRole}`;
+    const label = senderRole === "teacher" ? "Teacher" : "Student";
+    msgDiv.innerHTML = `<strong>${label}:</strong> ${text}`;
+    messagesDiv.appendChild(msgDiv);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  }
+
+  function sendChatMessage() {
+    const input = document.getElementById("chat-input");
+    const text = input.value.trim();
+    if (!text) return;
+
+    addChatMessage(currentUsername, text, role);
+    input.value = "";
+  }
+
+  function exitClass() {
+    if (localStream) localStream.getTracks().forEach(track => track.stop());
+    document.getElementById("participants").innerHTML = "";
+    document.getElementById("chat-messages").innerHTML = "";
+    document.getElementById("classroom").style.display = "none";
+    document.getElementById("platform").style.display = "block";
+    cameraStarted = false;
+  }
+
+  function endClass() {
+    if (role !== "teacher") return;
+    saveOngoingClass([]);
+    renderOngoingClasses();
+    exitClass();
+  }
+
+  // Ongoing class helpers (localStorage for demo)
+  function loadOngoingClass() {
+    const saved = localStorage.getItem('ongoingClass');
+    return saved ? JSON.parse(saved) : [];
+  }
+
+  function saveOngoingClass(classes) {
+    localStorage.setItem('ongoingClass', JSON.stringify(classes));
+  }
+
+  // Auto-refresh for students
   setInterval(() => {
     if (role === "student" && document.getElementById("platform").style.display !== "none") {
-      // Can be expanded later
+      renderOngoingClasses();
     }
-  }, 2000);
+  }, 1500);
 </script>
 </body>
 </html>
