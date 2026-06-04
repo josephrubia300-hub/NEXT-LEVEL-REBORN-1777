@@ -182,12 +182,12 @@
 </div>
 
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.js"></script>
+<script src="/socket.io/socket.io.js"></script>
 
 <script>
   // ================== SOCKET CONNECTION ==================
-  const BACKEND_URL = 'https://next-level-reborn-1777-10.onrender.com';
-  const socket = io(BACKEND_URL);
+  // Connect to the same server (Lightsail) - no need for external URL
+  const socket = io();
 
   // ================== GLOBALS ==================
   let role = "";
@@ -196,8 +196,8 @@
   let localStream = null;
   let peer = null;
   let myPeerId = null;
-  let connections = {};        // peerId → MediaConnection
-  let peerInfo = {};           // peerId → { username, role }
+  let connections = {};
+  let peerInfo = {};
   let cameraStarted = false;
   let uploadedMaterials = [];
 
@@ -226,11 +226,8 @@
 
     updateExitButton();
 
-    // Student: we will rely on socket 'room-list' to show classes
-    if (role === "student") {
-      // Show a placeholder until list arrives
-      document.getElementById("ongoingGrid").innerHTML = '<div class="course-card">Loading classes...</div>';
-    }
+    // Request room list on login
+    socket.emit('get-rooms');
   }
 
   function showSignup() {
@@ -250,7 +247,7 @@
     }
   }
 
-  // ================== ONGOING CLASSES (from backend) ==================
+  // ================== ONGOING CLASSES ==================
   function renderOngoingClasses(rooms) {
     const grid = document.getElementById("ongoingGrid");
     const noMsg = document.getElementById("noOngoingMessage");
@@ -277,11 +274,9 @@
   }
 
   function refreshOngoingClasses() {
-    // The backend will automatically send 'room-list' on refresh; we can just request it
-    socket.emit('get-rooms'); // optional, but we already broadcast on connect
+    socket.emit('get-rooms');
   }
 
-  // Socket listens for room list updates
   socket.on('room-list', (rooms) => {
     console.log('Received room list:', rooms);
     if (role === "student") {
@@ -302,10 +297,8 @@
   socket.on('room-created', (data) => {
     currentRoomCode = data.roomCode;
     document.getElementById("currentLessonTitle").textContent = data.lessonTitle;
-    // Switch to classroom view
     document.getElementById("platform").style.display = "none";
     document.getElementById("classroom").style.display = "block";
-    // Initialize PeerJS after entering classroom
     initPeer();
   });
 
@@ -324,16 +317,20 @@
   // ================== PEERJS SETUP ==================
   function initPeer() {
     console.log('Initializing PeerJS...');
+    
+    // Use your server's IP for PeerJS
     peer = new Peer(undefined, {
-      host: '0.peerjs.com',
+      host: window.location.hostname,
       port: 443,
-      secure: true,
+      secure: false,
+      path: '/peerjs',
       config: {
         iceServers: [
           { urls: 'stun:stun.l.google.com:19302' },
           { urls: 'stun:stun1.l.google.com:19302' },
-          { urls: 'turn:relay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
-          { urls: 'turn:relay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' }
+          { urls: 'stun:stun2.l.google.com:19302' },
+          { urls: 'stun:stun3.l.google.com:19302' },
+          { urls: 'stun:stun4.l.google.com:19302' }
         ]
       }
     });
@@ -341,7 +338,6 @@
     peer.on('open', (id) => {
       myPeerId = id;
       console.log('My Peer ID:', id);
-      // Share my Peer ID with everyone in the room
       socket.emit('share-peer-id', { roomCode: currentRoomCode, peerId: id });
     });
 
@@ -351,7 +347,6 @@
         call.answer(localStream);
         setupCall(call);
       } else {
-        // Store call for later
         window.pendingCalls = window.pendingCalls || {};
         window.pendingCalls[call.peer] = call;
       }
@@ -367,13 +362,10 @@
     });
   }
 
-  // When we receive a new peer ID from socket, connect to them
-  socket.on('new-peer', ({ peerId, senderId }) => {
+  socket.on('new-peer', ({ peerId }) => {
     console.log('New peer joined, connecting to:', peerId);
-    // Connect data channel
     const conn = peer.connect(peerId);
     setupDataConnection(conn);
-    // If we have local stream, call them
     if (localStream) {
       const call = peer.call(peerId, localStream);
       setupCall(call);
@@ -399,7 +391,6 @@
         showHandNotification(data.sender);
       }
     });
-    conn.on('error', (err) => console.error('Data connection error:', err));
   }
 
   function setupCall(call) {
@@ -408,7 +399,6 @@
       displayRemoteVideo(call.peer, remoteStream);
     });
     connections[call.peer] = call;
-    call.on('error', (err) => console.error('Call error:', err));
   }
 
   function displayRemoteVideo(peerId, stream) {
@@ -452,7 +442,6 @@
     volumeSlider.step = 0.1;
     volumeSlider.value = 1;
     volumeSlider.oninput = () => video.volume = volumeSlider.value;
-    volumeSlider.className = "volume-slider";
 
     controls.appendChild(muteBtn);
     controls.appendChild(volumeSlider);
@@ -469,21 +458,15 @@
       if (label) {
         label.textContent = `${peerInfo[peerId].username} (${peerInfo[peerId].role === "teacher" ? "Teacher" : "Student"})`;
       }
-      const video = wrapper.querySelector('video');
-      if (video) {
-        if (peerInfo[peerId].role === "teacher") video.classList.add("teacher-video");
-        else video.classList.add("student-video");
-      }
     }
   }
 
-  // ================== CAMERA & SCREEN ==================
+  // ================== CAMERA ==================
   function startCamera() {
     if (cameraStarted) {
       alert("Camera already active");
       return;
     }
-    cameraStarted = true;
 
     navigator.mediaDevices.getUserMedia({
       video: true,
@@ -491,6 +474,7 @@
     })
     .then(stream => {
       localStream = stream;
+      cameraStarted = true;
 
       const wrapper = document.createElement("div");
       wrapper.className = "participant-wrapper";
@@ -499,7 +483,7 @@
       video.className = "participant-video " + (role === "teacher" ? "teacher-video" : "student-video");
       video.autoplay = true;
       video.playsInline = true;
-      video.muted = true; // prevent echo
+      video.muted = true;
       video.srcObject = stream;
       video.onclick = () => wrapper.classList.toggle('expanded');
 
@@ -537,7 +521,7 @@
       wrapper.appendChild(controls);
       document.getElementById("participants").appendChild(wrapper);
 
-      // After camera starts, call any pending peers
+      // Answer pending calls
       if (window.pendingCalls) {
         Object.keys(window.pendingCalls).forEach(peerId => {
           const call = window.pendingCalls[peerId];
@@ -551,14 +535,6 @@
           delete window.pendingCalls[peerId];
         });
       }
-
-      // Also call all already connected data peers
-      Object.keys(connections).forEach(peerId => {
-        if (!connections[peerId] && peerId !== myPeerId) {
-          const call = peer.call(peerId, stream);
-          setupCall(call);
-        }
-      });
     })
     .catch(err => {
       alert("Camera error: " + err.message);
@@ -600,8 +576,7 @@
   }
 
   socket.on('chat', (data) => {
-    // Determine sender role (for styling)
-    const senderRole = data.username === username ? role : (peerInfo[Object.keys(peerInfo)[0]]?.username === data.username ? peerInfo[Object.keys(peerInfo)[0]].role : 'student');
+    const senderRole = data.username === username ? role : 'student';
     addChatMessage(data.username, data.message, senderRole);
   });
 
@@ -635,7 +610,10 @@
 
   // ================== EXIT ==================
   function leaveClass() {
-    if (localStream) localStream.getTracks().forEach(t => t.stop());
+    if (localStream) {
+      localStream.getTracks().forEach(t => t.stop());
+      localStream = null;
+    }
     if (peer) peer.destroy();
     document.getElementById("participants").innerHTML = "";
     document.getElementById("chat-messages").innerHTML = "";
@@ -643,6 +621,8 @@
     document.getElementById("platform").style.display = "block";
     cameraStarted = false;
     currentRoomCode = null;
+    connections = {};
+    peerInfo = {};
   }
 
   function endClass() {
@@ -651,7 +631,7 @@
     leaveClass();
   }
 
-  // ================== MATERIALS (demo) ==================
+  // ================== MATERIALS ==================
   function uploadMaterial() {
     const title = document.getElementById("materialTitle").value.trim();
     const file = document.getElementById("fileUpload").files[0];
