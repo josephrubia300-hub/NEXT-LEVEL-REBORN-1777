@@ -172,6 +172,7 @@
       errDiv.style.display = 'block';
       setTimeout(() => errDiv.style.display = 'none', 5000);
     }
+    console.error(msg);
   }
 
   function login() {
@@ -243,7 +244,6 @@
     initPeer();
   });
 
-  // ========== USE PUBLIC PEERJS SERVER (FIXED) ==========
   function initPeer() {
     console.log("Initializing PeerJS with public cloud server...");
     peer = new Peer(undefined, {
@@ -435,23 +435,63 @@
       });
   }
 
+  // ========== FIXED SCREEN SHARING ==========
   function shareScreen() {
-    navigator.mediaDevices.getDisplayMedia({ video: true })
-      .then(stream => {
-        const wrapper = document.createElement("div");
-        wrapper.className = "participant-wrapper";
-        const video = document.createElement("video");
-        video.autoplay = true;
-        video.srcObject = stream;
-        video.onclick = () => wrapper.classList.toggle('expanded');
-        const label = document.createElement("div");
-        label.className = "participant-label";
-        label.textContent = `${username} (Screen Share)`;
-        wrapper.appendChild(video);
-        wrapper.appendChild(label);
-        document.getElementById("participants").appendChild(wrapper);
-      })
-      .catch(err => showError("Screen share failed: " + err.message));
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+      showError("Screen sharing is not supported in this browser");
+      return;
+    }
+
+    navigator.mediaDevices.getDisplayMedia({ 
+      video: true,
+      audio: false
+    })
+    .then(stream => {
+      const wrapper = document.createElement("div");
+      wrapper.className = "participant-wrapper";
+      wrapper.id = "screenshare-" + Date.now();
+
+      const video = document.createElement("video");
+      video.className = "participant-video";
+      video.autoplay = true;
+      video.playsInline = true;
+      video.srcObject = stream;
+      video.onclick = () => wrapper.classList.toggle('expanded');
+
+      const label = document.createElement("div");
+      label.className = "participant-label";
+      label.textContent = `${username} (Screen Share)`;
+
+      const stopBtn = document.createElement("button");
+      stopBtn.textContent = "Stop Sharing";
+      stopBtn.style.background = "#d32f2f";
+      stopBtn.style.padding = "5px 10px";
+      stopBtn.style.fontSize = "12px";
+      stopBtn.style.marginTop = "5px";
+      stopBtn.onclick = () => {
+        stream.getTracks().forEach(track => track.stop());
+        wrapper.remove();
+      };
+
+      wrapper.appendChild(video);
+      wrapper.appendChild(label);
+      wrapper.appendChild(stopBtn);
+      document.getElementById("participants").appendChild(wrapper);
+
+      stream.getVideoTracks()[0].onended = () => {
+        wrapper.remove();
+        showError("Screen sharing ended");
+      };
+    })
+    .catch(err => {
+      console.error("Screen share error:", err);
+      let errorMsg = "Screen share failed: ";
+      if (err.name === "NotAllowedError") errorMsg += "Permission denied. Please allow screen sharing.";
+      else if (err.name === "NotFoundError") errorMsg += "No screen capture source found.";
+      else errorMsg += err.message;
+      showError(errorMsg);
+      alert(errorMsg);
+    });
   }
 
   function sendChatMessage() {
