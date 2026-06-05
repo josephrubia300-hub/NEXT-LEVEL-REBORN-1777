@@ -310,6 +310,7 @@
         let localStream = null, screenStream = null;
         let peer = null, myPeerId = null;
         let connectedPeers = {};
+        let peerUserInfo = {};  // Store peer username and role
         let cameraOn = false, screenOn = false;
         let pendingCalls = [];
 
@@ -470,6 +471,19 @@
 
         socket.on('new-peer', ({ peerId }) => {
             console.log('New peer joined:', peerId);
+            // Request user info from the new peer via data connection
+            const conn = peer.connect(peerId);
+            conn.on('open', () => {
+                conn.send({ type: 'info', username, role });
+            });
+            conn.on('data', (data) => {
+                if (data.type === 'info') {
+                    peerUserInfo[peerId] = { username: data.username, role: data.role };
+                    // Update video label for this peer
+                    updateVideoLabel(peerId);
+                }
+            });
+            
             setTimeout(() => {
                 if (localStream) {
                     let call = peer.call(peerId, localStream);
@@ -481,6 +495,26 @@
                 }
             }, 1000);
         });
+
+        function updateVideoLabel(peerId) {
+            let info = peerUserInfo[peerId];
+            if (!info) return;
+            
+            let displayName = info.role === 'teacher' ? 'Teacher' : `Student (${info.username})`;
+            
+            // Update camera video label
+            let cameraEl = document.getElementById(`video-${peerId}-camera`);
+            if (cameraEl) {
+                let label = cameraEl.querySelector('.label');
+                if (label) label.innerText = displayName;
+            }
+            // Update screen share video label
+            let screenEl = document.getElementById(`video-${peerId}-screen`);
+            if (screenEl) {
+                let label = screenEl.querySelector('.label');
+                if (label) label.innerText = `${displayName} (Screen)`;
+            }
+        }
 
         function handleCall(call, type) {
             call.on('stream', (stream) => {
@@ -506,9 +540,17 @@
             video.playsInline = true;
             if (type === 'screen') video.classList.add('screen-share');
 
+            // Get display name from stored peer info
+            let info = peerUserInfo[peerId];
+            let displayName = 'Participant';
+            if (info) {
+                displayName = info.role === 'teacher' ? 'Teacher' : `Student (${info.username})`;
+            }
+            if (type === 'screen') displayName = `${displayName} (Screen)`;
+
             let label = document.createElement('div');
             label.className = 'label';
-            label.innerText = type === 'screen' ? '📺 Screen Share' : 'Participant';
+            label.innerText = displayName;
 
             let controls = document.createElement('div');
             controls.className = 'video-controls';
@@ -788,21 +830,17 @@
             let text = input.value.trim();
             if (!text || !roomCode) return;
             
-            console.log('Sending message - role:', role, 'username:', username);
-            // IMPORTANT: Send the role explicitly
             socket.emit('chat', { 
                 roomCode, 
                 username: username, 
                 message: text, 
-                role: role  // Send role separately
+                role: role
             });
             addMessage(username, text, role);
             input.value = '';
         }
 
         socket.on('chat', (data) => {
-            console.log('Received chat - role:', data.role, 'username:', data.username);
-            // Don't duplicate own messages
             if (data.username !== username) {
                 addMessage(data.username, data.message, data.role);
             }
@@ -813,7 +851,6 @@
             let msg = document.createElement('div');
             msg.className = `message ${senderRole}`;
             
-            // FIXED: Teacher shows as "Teacher", Student shows as "Student (Name)"
             let displayName;
             if (senderRole === 'teacher') {
                 displayName = 'Teacher';
@@ -824,7 +861,6 @@
             msg.innerHTML = `<strong>${displayName}:</strong> ${escapeHtml(text)}`;
             container.appendChild(msg);
             container.scrollTop = container.scrollHeight;
-            console.log('Added message - displayName:', displayName);
         }
 
         function raiseHand() {
@@ -856,6 +892,7 @@
             cameraOn = false;
             screenOn = false;
             connectedPeers = {};
+            peerUserInfo = {};
             roomCode = null;
             
             let shareBtn = document.getElementById('shareScreenBtn');
