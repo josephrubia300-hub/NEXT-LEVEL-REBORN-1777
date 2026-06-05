@@ -833,4 +833,136 @@
                     
                     stream.getVideoTracks()[0].onended = () => stopScreenShare();
                 })
-                .catch(err => showError('Screen share
+                .catch(err => showError('Screen share failed: ' + err.message));
+        }
+
+        function stopScreenShare() {
+            if (screenStream) {
+                screenStream.getTracks().forEach(t => t.stop());
+                screenStream = null;
+            }
+            screenOn = false;
+            
+            let shareBtn = document.getElementById('shareScreenBtn');
+            shareBtn.innerText = '🖥️ Share Screen';
+            shareBtn.style.background = '';
+            
+            let el = document.getElementById('local-screen');
+            if (el) el.remove();
+            
+            Object.keys(connectedPeers).forEach(pid => {
+                if (connectedPeers[pid] && connectedPeers[pid].type === 'screen') {
+                    connectedPeers[pid].call.close();
+                    delete connectedPeers[pid];
+                }
+            });
+        }
+
+        // ========== CHAT - FIXED ==========
+        function sendMessage() {
+            let input = document.getElementById('chat-input');
+            let text = input.value.trim();
+            if (!text || !roomCode) return;
+            
+            let messageId = Date.now() + '-' + Math.random() + '-' + username;
+            
+            console.log('Sending message - role:', role, 'username:', username);
+            
+            socket.emit('chat', { 
+                roomCode, 
+                username: username, 
+                message: text, 
+                role: role,
+                messageId: messageId
+            });
+            
+            addChatMessageToUI(username, text, role, messageId);
+            input.value = '';
+        }
+
+        socket.on('chat', (data) => {
+            console.log('Received chat - role:', data.role, 'username:', data.username, 'messageId:', data.messageId);
+            
+            if (processedMessages.has(data.messageId)) return;
+            processedMessages.add(data.messageId);
+            setTimeout(() => processedMessages.delete(data.messageId), 1000);
+            
+            addChatMessageToUI(data.username, data.message, data.role, data.messageId);
+        });
+
+        function addChatMessageToUI(sender, text, senderRole, messageId) {
+            let container = document.getElementById('messages');
+            let msg = document.createElement('div');
+            msg.className = `message ${senderRole}`;
+            
+            let displayName;
+            if (senderRole === 'teacher') {
+                displayName = 'Teacher';
+            } else {
+                displayName = `Student (${escapeHtml(sender)})`;
+            }
+            
+            msg.innerHTML = `<strong>${displayName}:</strong> ${escapeHtml(text)}`;
+            container.appendChild(msg);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function raiseHand() {
+            if (!roomCode) return;
+            let messageId = Date.now() + '-' + Math.random() + '-' + username;
+            socket.emit('raise-hand', { roomCode, username, role: role, messageId: messageId });
+            addChatMessageToUI(username, 'raised hand ✋', role, messageId);
+        }
+
+        socket.on('hand-raised', (data) => {
+            if (processedMessages.has(data.messageId)) return;
+            processedMessages.add(data.messageId);
+            setTimeout(() => processedMessages.delete(data.messageId), 1000);
+            
+            addChatMessageToUI(data.username, 'raised hand ✋', data.role, data.messageId);
+            
+            let alert = document.getElementById('hand-raise-alert');
+            alert.innerText = `✋ ${escapeHtml(data.username)} raised their hand!`;
+            alert.style.display = 'block';
+            setTimeout(() => alert.style.display = 'none', 5000);
+        });
+
+        function leaveRoom() {
+            if (localStream) localStream.getTracks().forEach(t => t.stop());
+            if (screenStream) screenStream.getTracks().forEach(t => t.stop());
+            if (peer) peer.destroy();
+            
+            socket.emit('leave-room', { roomCode, username, role, peerId: myPeerId });
+            
+            document.getElementById('participants').innerHTML = '';
+            document.getElementById('messages').innerHTML = '';
+            document.getElementById('classroom').style.display = 'none';
+            document.getElementById('platform').style.display = 'block';
+            
+            cameraOn = false;
+            screenOn = false;
+            connectedPeers = {};
+            peerUserInfo = {};
+            roomCode = null;
+            processedMessages.clear();
+            
+            let shareBtn = document.getElementById('shareScreenBtn');
+            if (shareBtn) {
+                shareBtn.innerText = '🖥️ Share Screen';
+                shareBtn.style.background = '';
+            }
+            if (isMobile()) exitFullscreen();
+            
+            if (role === 'teacher') {
+                socket.emit('get-rooms');
+            }
+        }
+
+        function endClass() {
+            if (role !== 'teacher') return;
+            socket.emit('end-class', { roomCode });
+            leaveRoom();
+        }
+    </script>
+</body>
+</html>
