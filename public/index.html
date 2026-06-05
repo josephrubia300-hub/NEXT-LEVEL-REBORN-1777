@@ -2,56 +2,36 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=yes">
-    <title>Next Level Academy - Live Video Classroom</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Next Level Academy</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #eef1f7; }
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #eef1f7;
-            color: #333;
-        }
-
-        /* Login Page */
         #loginPage {
             height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)),
-                url('https://i.postimg.cc/jd0ZRMCV/next-level.jpg') center/cover no-repeat;
+            background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)),
+                        url('https://i.postimg.cc/jd0ZRMCV/next-level.jpg') center/cover;
         }
-
         .login-box {
-            background: rgba(255, 255, 255, 0.95);
+            background: rgba(255,255,255,0.95);
             padding: 40px;
             border-radius: 20px;
             text-align: center;
             max-width: 400px;
             width: 90%;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
         }
-
-        .login-box h2 {
-            color: #2c3ea8;
-            margin-bottom: 20px;
-        }
-
-        .login-box input,
-        .login-box select {
+        .login-box h2 { color: #2c3ea8; margin-bottom: 20px; }
+        .login-box input, .login-box select {
             width: 100%;
             padding: 12px;
             margin: 10px 0;
             border: 1px solid #ddd;
             border-radius: 10px;
-            font-size: 16px;
         }
-
         button {
             background: #2c3ea8;
             color: white;
@@ -59,39 +39,13 @@
             padding: 12px 24px;
             border-radius: 10px;
             cursor: pointer;
-            font-size: 16px;
             margin: 5px;
-            transition: all 0.3s;
         }
+        button:hover { background: #1c2c80; }
+        button.danger { background: #d32f2f; }
+        button.warning { background: #ff9800; }
 
-        button:hover {
-            background: #1c2c80;
-            transform: scale(1.02);
-        }
-
-        button.danger {
-            background: #d32f2f;
-        }
-
-        button.danger:hover {
-            background: #b71c1c;
-        }
-
-        button.warning {
-            background: #ff9800;
-        }
-
-        button.warning:hover {
-            background: #e68900;
-        }
-
-        /* Dashboard */
-        .dashboard {
-            padding: 20px;
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
+        .dashboard { padding: 20px; max-width: 1400px; margin: 0 auto; }
         .welcome-hero {
             background: linear-gradient(135deg, #1a237e, #0d47a1);
             padding: 40px;
@@ -100,34 +54,29 @@
             text-align: center;
             margin-bottom: 20px;
         }
-
         .course-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
             gap: 20px;
             margin: 20px 0;
         }
-
         .course-card {
             background: linear-gradient(135deg, #5a6bff, #7a9cff);
             padding: 20px;
             border-radius: 16px;
             color: white;
         }
-
         .course-card button {
             background: white;
             color: #2c3ea8;
             margin-top: 10px;
         }
-
         .start-lesson-box {
             background: white;
             padding: 20px;
             border-radius: 16px;
             margin: 20px 0;
         }
-
         .start-lesson-box input {
             padding: 10px;
             margin: 10px 0;
@@ -137,12 +86,7 @@
             border-radius: 8px;
         }
 
-        /* Classroom */
-        #classroom {
-            display: none;
-            padding: 20px;
-        }
-
+        #classroom { display: none; padding: 20px; }
         #participants {
             display: flex;
             flex-wrap: wrap;
@@ -150,111 +94,36 @@
             justify-content: center;
             margin: 20px 0;
         }
-
         .video-container {
             background: white;
             border-radius: 16px;
             padding: 12px;
             width: 360px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s ease;
-            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
-
-        /* Fullscreen expanded mode for mobile */
-        .video-container.expanded {
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            right: 0 !important;
-            bottom: 0 !important;
-            width: 100vw !important;
-            height: 100vh !important;
-            max-width: none !important;
-            border-radius: 0 !important;
-            z-index: 10000 !important;
-            background: #000 !important;
-            padding: 0 !important;
-            margin: 0 !important;
-            display: flex !important;
-            flex-direction: column !important;
-            justify-content: center !important;
-            align-items: center !important;
-            transform: none !important;
-        }
-
-        .video-container.expanded video {
-            width: 100% !important;
-            height: auto !important;
-            max-height: 90vh !important;
-            object-fit: contain !important;
-        }
-
-        .video-container.expanded .video-controls {
-            position: fixed;
-            bottom: 20px;
-            left: 0;
-            right: 0;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 10px;
-            border-radius: 30px;
-            width: fit-content;
-            margin: 0 auto;
-            z-index: 10001;
-        }
-
         .video-container video {
             width: 100%;
             border-radius: 12px;
             background: #000;
             aspect-ratio: 16/9;
             object-fit: cover;
-            pointer-events: none;
         }
-
         .video-container .label {
             margin-top: 8px;
             font-weight: bold;
             text-align: center;
         }
-
         .video-controls {
             display: flex;
             justify-content: center;
             gap: 8px;
             margin-top: 8px;
-            pointer-events: auto;
         }
-
-        .video-controls button,
-        .video-controls input {
+        .video-controls button, .video-controls input {
             padding: 5px 10px;
             font-size: 12px;
-            pointer-events: auto;
         }
 
-        .expand-close {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: red;
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            font-size: 20px;
-            cursor: pointer;
-            display: none;
-            z-index: 10001;
-            pointer-events: auto;
-        }
-
-        .video-container.expanded .expand-close {
-            display: block;
-        }
-
-        /* Chat */
         #chat {
             max-width: 800px;
             margin: 20px auto;
@@ -262,41 +131,30 @@
             border-radius: 16px;
             overflow: hidden;
         }
-
         #messages {
             height: 200px;
             overflow-y: auto;
             padding: 15px;
             background: #fafafa;
         }
-
         .message {
             padding: 8px 12px;
             margin: 5px 0;
             border-radius: 10px;
         }
-
-        .message.teacher {
-            background: #fff3e0;
-        }
-
-        .message.student {
-            background: #e3f2fd;
-        }
-
+        .message.teacher { background: #fff3e0; }
+        .message.student { background: #e3f2fd; }
         #chat-input-area {
             display: flex;
             border-top: 1px solid #ddd;
             padding: 10px;
         }
-
         #chat-input {
             flex: 1;
             padding: 10px;
             border: 1px solid #ddd;
             border-radius: 8px;
         }
-
         #hand-raise-alert {
             position: fixed;
             top: 20px;
@@ -309,7 +167,6 @@
             z-index: 1000;
             display: none;
         }
-
         .error-msg {
             color: red;
             background: #ffebee;
@@ -318,24 +175,11 @@
             margin: 10px;
             display: none;
         }
-
-        .screen-share {
-            border: 3px solid #ff9800 !important;
-        }
-
-        /* Mobile orientation support */
-        @media (orientation: landscape) {
-            .video-container.expanded video {
-                width: auto !important;
-                height: 90vh !important;
-                max-width: 100vw !important;
-            }
-        }
+        .screen-share { border: 3px solid #ff9800 !important; }
     </style>
 </head>
 <body>
 
-    <!-- LOGIN PAGE -->
     <div id="loginPage">
         <div class="login-box">
             <h2>🎓 Next Level Academy</h2>
@@ -346,38 +190,33 @@
                 <option value="teacher">Teacher</option>
             </select><br>
             <button onclick="login()">Login</button>
-            <p style="margin-top: 15px; color: #2c3ea8; cursor: pointer;" onclick="alert('Any username/password works for demo')">Don't have an account? Sign Up</p>
+            <p style="margin-top: 15px; color: #2c3ea8; cursor: pointer;" onclick="alert('Any username/password works')">Sign Up</p>
         </div>
     </div>
 
-    <!-- DASHBOARD -->
     <div id="platform" style="display: none;">
         <div class="dashboard">
             <div class="welcome-hero">
                 <h1>Next Level Academy</h1>
                 <p id="welcomeMessage"></p>
             </div>
-
             <h2>📚 Ongoing Classes</h2>
             <div id="class-list" class="course-grid">Loading...</div>
-
             <div id="teacher-panel" style="display: none;">
                 <div class="start-lesson-box">
                     <h3>🚀 Start a New Lesson</h3>
-                    <input type="text" id="lessonTitle" placeholder="Lesson Title e.g. Math Grade 7">
+                    <input type="text" id="lessonTitle" placeholder="Lesson Title">
                     <button onclick="createRoom()">Start Lesson</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- CLASSROOM -->
     <div id="classroom">
         <div id="hand-raise-alert">✋ Hand raised!</div>
         <h2>🎥 Live: <span id="room-title"></span></h2>
         <div id="error-msg" class="error-msg"></div>
         <div id="participants"></div>
-
         <div id="chat">
             <div id="messages"></div>
             <div id="chat-input-area">
@@ -385,12 +224,11 @@
                 <button onclick="sendMessage()">Send</button>
             </div>
         </div>
-
         <div style="text-align: center; margin: 20px;">
             <button onclick="startCamera()">📷 Start My Camera</button>
             <button onclick="startScreenShare()" id="shareScreenBtn">🖥️ Share Screen</button>
             <button onclick="raiseHand()">✋ Raise Hand</button>
-            <button id="exitBtn" class="danger">End Class</button>
+            <button id="exitBtn">Leave Class</button>
         </div>
     </div>
 
@@ -398,9 +236,6 @@
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 
     <script>
-        // ============================================
-        // GLOBAL VARIABLES
-        // ============================================
         let socket = io();
         let username = "", role = "", roomCode = null;
         let localStream = null, screenStream = null;
@@ -429,41 +264,15 @@
             });
         }
 
-        function isMobileDevice() {
+        function isMobile() {
             return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
         }
 
-        // Request fullscreen on mobile for expanded view
-        function requestFullscreen(element) {
-            if (element.requestFullscreen) {
-                element.requestFullscreen();
-            } else if (element.webkitRequestFullscreen) {
-                element.webkitRequestFullscreen();
-            } else if (element.msRequestFullscreen) {
-                element.msRequestFullscreen();
-            }
-        }
-
-        function exitFullscreen() {
-            if (document.exitFullscreen) {
-                document.exitFullscreen();
-            } else if (document.webkitExitFullscreen) {
-                document.webkitExitFullscreen();
-            }
-        }
-
-        // ============================================
-        // LOGIN & ROOM MANAGEMENT
-        // ============================================
         function login() {
             username = document.getElementById('username').value.trim();
             let pass = document.getElementById('password').value;
             role = document.getElementById('role').value;
-
-            if (!username || !pass) {
-                alert('Enter username and password');
-                return;
-            }
+            if (!username || !pass) return alert('Enter username and password');
 
             document.getElementById('loginPage').style.display = 'none';
             document.getElementById('platform').style.display = 'block';
@@ -497,7 +306,7 @@
                 <div class="course-card">
                     <h3>${escapeHtml(room.title)}</h3>
                     <p>👩‍🏫 ${escapeHtml(room.teacher)}</p>
-                    <p>👥 ${room.studentsCount} students</p>
+                    <p>👥 ${room.studentsCount}</p>
                     <button onclick="joinRoom('${escapeHtml(room.code)}')">Join Class</button>
                 </div>
             `).join('');
@@ -505,10 +314,7 @@
 
         function createRoom() {
             let title = document.getElementById('lessonTitle').value.trim();
-            if (!title) {
-                alert('Enter lesson title');
-                return;
-            }
+            if (!title) return alert('Enter lesson title');
             socket.emit('create-room', { username, lessonTitle: title });
         }
 
@@ -532,9 +338,6 @@
             initPeer();
         });
 
-        // ============================================
-        // PEERJS SETUP
-        // ============================================
         function initPeer() {
             console.log('Initializing PeerJS...');
             peer = new Peer(undefined, {
@@ -557,9 +360,8 @@
             });
 
             peer.on('call', (call) => {
-                console.log('Incoming call from', call.peer, 'type:', call.metadata?.type);
+                console.log('Incoming call from', call.peer);
                 let type = call.metadata?.type || 'camera';
-                
                 if (type === 'screen' && screenStream) {
                     call.answer(screenStream);
                     handleCall(call, 'screen');
@@ -571,41 +373,31 @@
                 }
             });
 
-            peer.on('error', (err) => {
-                console.error('Peer error:', err);
-                showError('Connection error: ' + err.message);
-            });
+            peer.on('error', (err) => console.error('Peer error:', err));
         }
 
         socket.on('new-peer', ({ peerId }) => {
-            console.log('New peer joined:', peerId);
-            
+            console.log('New peer:', peerId);
             if (localStream) {
                 let call = peer.call(peerId, localStream);
                 handleCall(call, 'camera');
             }
-            
             if (screenStream) {
-                let screenCall = peer.call(peerId, screenStream, { metadata: { type: 'screen' } });
-                handleCall(screenCall, 'screen');
+                let call = peer.call(peerId, screenStream, { metadata: { type: 'screen' } });
+                handleCall(call, 'screen');
             }
         });
 
         function handleCall(call, type) {
             call.on('stream', (stream) => {
                 console.log(`Received ${type} stream from`, call.peer);
-                addVideoToUI(call.peer, stream, type);
+                addVideo(call.peer, stream, type);
             });
-            
-            call.on('close', () => {
-                console.log(`Call closed from`, call.peer);
-                removeVideoFromUI(call.peer, type);
-            });
-            
-            connectedPeers[call.peer] = { call, type, name: call.peer };
+            call.on('close', () => removeVideo(call.peer, type));
+            connectedPeers[call.peer] = { call, type };
         }
 
-        function addVideoToUI(peerId, stream, type) {
+        function addVideo(peerId, stream, type) {
             let container = document.getElementById('participants');
             let existing = document.getElementById(`video-${peerId}-${type}`);
             if (existing) return;
@@ -618,31 +410,18 @@
             video.srcObject = stream;
             video.autoplay = true;
             video.playsInline = true;
-            
-            if (type === 'screen') {
-                video.classList.add('screen-share');
-            }
-
-            let closeBtn = document.createElement('button');
-            closeBtn.className = 'expand-close';
-            closeBtn.innerHTML = '✕';
-            closeBtn.onclick = (e) => {
-                e.stopPropagation();
-                div.classList.remove('expanded');
-                exitFullscreen();
-            };
+            if (type === 'screen') video.classList.add('screen-share');
 
             let label = document.createElement('div');
             label.className = 'label';
-            label.innerText = type === 'screen' ? '📺 Screen Share' : `👤 ${peerId.substring(0, 8)}`;
+            label.innerText = type === 'screen' ? '📺 Screen Share' : `Participant`;
 
             let controls = document.createElement('div');
             controls.className = 'video-controls';
             
             let muteBtn = document.createElement('button');
             muteBtn.innerText = '🔊 Mute';
-            muteBtn.onclick = (e) => {
-                e.stopPropagation();
+            muteBtn.onclick = () => {
                 let audio = stream.getAudioTracks()[0];
                 if (audio) {
                     audio.enabled = !audio.enabled;
@@ -657,62 +436,31 @@
             volSlider.step = 0.05;
             volSlider.value = 1;
             volSlider.style.width = '70px';
-            volSlider.oninput = (e) => { 
-                e.stopPropagation();
-                video.volume = parseFloat(e.target.value); 
-            };
-            
-            let expandBtn = document.createElement('button');
-            expandBtn.innerText = '🔍 Expand';
-            expandBtn.onclick = (e) => {
-                e.stopPropagation();
-                document.querySelectorAll('.video-container.expanded').forEach(v => v.classList.remove('expanded'));
-                div.classList.add('expanded');
-                if (isMobileDevice()) {
-                    requestFullscreen(div);
-                }
-            };
+            volSlider.oninput = () => video.volume = parseFloat(volSlider.value);
             
             controls.appendChild(muteBtn);
             controls.appendChild(volSlider);
-            controls.appendChild(expandBtn);
             
             div.appendChild(video);
             div.appendChild(label);
             div.appendChild(controls);
-            div.appendChild(closeBtn);
-            
-            video.onclick = (e) => {
-                e.stopPropagation();
-                document.querySelectorAll('.video-container.expanded').forEach(v => v.classList.remove('expanded'));
-                div.classList.add('expanded');
-                if (isMobileDevice()) {
-                    requestFullscreen(div);
-                }
-            };
-            
             container.appendChild(div);
         }
 
-        function removeVideoFromUI(peerId, type) {
+        function removeVideo(peerId, type) {
             let el = document.getElementById(`video-${peerId}-${type}`);
             if (el) el.remove();
         }
 
-        // ============================================
-        // CAMERA & SCREEN SHARE
-        // ============================================
         function startCamera() {
-            if (cameraOn) {
-                alert('Camera already active');
-                return;
-            }
-
+            if (cameraOn) return alert('Camera already active');
+            
             navigator.mediaDevices.getUserMedia({ video: true, audio: true })
                 .then(stream => {
                     localStream = stream;
                     cameraOn = true;
                     
+                    // Show local video
                     let container = document.getElementById('participants');
                     let existing = document.getElementById('local-video');
                     if (existing) existing.remove();
@@ -726,15 +474,6 @@
                     video.autoplay = true;
                     video.muted = true;
                     video.playsInline = true;
-                    
-                    let closeBtn = document.createElement('button');
-                    closeBtn.className = 'expand-close';
-                    closeBtn.innerHTML = '✕';
-                    closeBtn.onclick = (e) => {
-                        e.stopPropagation();
-                        div.classList.remove('expanded');
-                        exitFullscreen();
-                    };
                     
                     let label = document.createElement('div');
                     label.className = 'label';
@@ -759,69 +498,44 @@
                     volSlider.max = 1;
                     volSlider.step = 0.05;
                     volSlider.value = 1;
-                    volSlider.oninput = (e) => { video.volume = parseFloat(e.target.value); };
-                    
-                    let expandBtn = document.createElement('button');
-                    expandBtn.innerText = '🔍 Expand';
-                    expandBtn.onclick = () => {
-                        div.classList.toggle('expanded');
-                        if (isMobileDevice() && div.classList.contains('expanded')) {
-                            requestFullscreen(div);
-                        } else if (!div.classList.contains('expanded')) {
-                            exitFullscreen();
-                        }
-                    };
+                    volSlider.oninput = () => video.volume = parseFloat(volSlider.value);
                     
                     controls.appendChild(muteBtn);
                     controls.appendChild(volSlider);
-                    controls.appendChild(expandBtn);
                     div.appendChild(video);
                     div.appendChild(label);
                     div.appendChild(controls);
-                    div.appendChild(closeBtn);
-                    
-                    video.onclick = () => {
-                        div.classList.toggle('expanded');
-                        if (isMobileDevice() && div.classList.contains('expanded')) {
-                            requestFullscreen(div);
-                        } else if (!div.classList.contains('expanded')) {
-                            exitFullscreen();
-                        }
-                    };
                     container.appendChild(div);
                     
-                    pendingCalls = pendingCalls.filter(p => {
+                    // Answer pending calls
+                    pendingCalls.forEach(p => {
                         if (p.type === 'camera') {
                             p.call.answer(stream);
                             handleCall(p.call, 'camera');
-                            return false;
                         }
-                        return true;
                     });
+                    pendingCalls = [];
                     
+                    // Call all peers
                     Object.keys(connectedPeers).forEach(pid => {
-                        if (connectedPeers[pid].type === 'camera') return;
                         let call = peer.call(pid, stream);
                         handleCall(call, 'camera');
                     });
                 })
-                .catch(err => {
-                    console.error('Camera error:', err);
-                    showError('Camera error: ' + err.message);
-                });
+                .catch(err => showError('Camera error: ' + err.message));
         }
 
         function startScreenShare() {
-            if (isMobileDevice()) {
-                alert("Screen sharing is not supported on mobile devices. Please use a laptop or desktop computer.");
+            if (isMobile()) {
+                alert("Screen sharing is not supported on mobile devices. Please use a laptop.");
                 return;
             }
-
+            
             if (screenOn) {
                 stopScreenShare();
                 return;
             }
-
+            
             navigator.mediaDevices.getDisplayMedia({ video: true, audio: false })
                 .then(stream => {
                     screenStream = stream;
@@ -831,6 +545,7 @@
                     shareBtn.innerText = '⏹️ Stop Sharing';
                     shareBtn.style.background = '#d32f2f';
                     
+                    // Show local screen
                     let container = document.getElementById('participants');
                     let existing = document.getElementById('local-screen');
                     if (existing) existing.remove();
@@ -845,15 +560,6 @@
                     video.playsInline = true;
                     video.classList.add('screen-share');
                     
-                    let closeBtn = document.createElement('button');
-                    closeBtn.className = 'expand-close';
-                    closeBtn.innerHTML = '✕';
-                    closeBtn.onclick = (e) => {
-                        e.stopPropagation();
-                        div.classList.remove('expanded');
-                        exitFullscreen();
-                    };
-                    
                     let label = document.createElement('div');
                     label.className = 'label';
                     label.innerText = `${username} (Screen - You)`;
@@ -866,43 +572,21 @@
                     stopBtn.style.background = '#d32f2f';
                     stopBtn.onclick = () => stopScreenShare();
                     
-                    let expandBtn = document.createElement('button');
-                    expandBtn.innerText = '🔍 Expand';
-                    expandBtn.onclick = () => {
-                        div.classList.toggle('expanded');
-                        if (isMobileDevice() && div.classList.contains('expanded')) {
-                            requestFullscreen(div);
-                        } else if (!div.classList.contains('expanded')) {
-                            exitFullscreen();
-                        }
-                    };
-                    
                     controls.appendChild(stopBtn);
-                    controls.appendChild(expandBtn);
                     div.appendChild(video);
                     div.appendChild(label);
                     div.appendChild(controls);
-                    div.appendChild(closeBtn);
-                    
-                    video.onclick = () => {
-                        div.classList.toggle('expanded');
-                        if (isMobileDevice() && div.classList.contains('expanded')) {
-                            requestFullscreen(div);
-                        } else if (!div.classList.contains('expanded')) {
-                            exitFullscreen();
-                        }
-                    };
                     container.appendChild(div);
                     
-                    pendingCalls = pendingCalls.filter(p => {
+                    // Answer pending screen calls
+                    pendingCalls.forEach(p => {
                         if (p.type === 'screen') {
                             p.call.answer(stream);
                             handleCall(p.call, 'screen');
-                            return false;
                         }
-                        return true;
                     });
                     
+                    // Call all peers
                     Object.keys(connectedPeers).forEach(pid => {
                         let call = peer.call(pid, stream, { metadata: { type: 'screen' } });
                         handleCall(call, 'screen');
@@ -910,11 +594,7 @@
                     
                     stream.getVideoTracks()[0].onended = () => stopScreenShare();
                 })
-                .catch(err => {
-                    console.error('Screen share error:', err);
-                    showError('Screen share failed: ' + err.message);
-                    screenOn = false;
-                });
+                .catch(err => showError('Screen share failed: ' + err.message));
         }
 
         function stopScreenShare() {
@@ -932,46 +612,33 @@
             if (el) el.remove();
             
             Object.keys(connectedPeers).forEach(pid => {
-                if (connectedPeers[pid] && connectedPeers[pid].type === 'screen') {
+                if (connectedPeers[pid]?.type === 'screen') {
                     connectedPeers[pid].call.close();
                     delete connectedPeers[pid];
                 }
             });
         }
 
-        // ============================================
-        // CHAT & HAND RAISE (FIXED - TEACHER/STUDENT)
-        // ============================================
         function sendMessage() {
             let input = document.getElementById('chat-input');
             let text = input.value.trim();
             if (!text || !roomCode) return;
-            
             socket.emit('chat', { roomCode, username, message: text, role });
-            displayMessage(username, text, role);
-            
+            addMessage(username, text, role);
             input.value = '';
         }
 
         socket.on('chat', (data) => {
             if (data.username !== username) {
-                displayMessage(data.username, data.message, data.role);
+                addMessage(data.username, data.message, data.role);
             }
         });
 
-        function displayMessage(sender, text, senderRole) {
+        function addMessage(sender, text, senderRole) {
             let container = document.getElementById('messages');
             let msg = document.createElement('div');
             msg.className = `message ${senderRole}`;
-            
-            // Fixed: Teacher shows as "Teacher", Student shows as "Student (Name)"
-            let displayName;
-            if (senderRole === 'teacher') {
-                displayName = 'Teacher';
-            } else {
-                displayName = `Student (${escapeHtml(sender)})`;
-            }
-            
+            let displayName = senderRole === 'teacher' ? 'Teacher' : `Student (${escapeHtml(sender)})`;
             msg.innerHTML = `<strong>${displayName}:</strong> ${escapeHtml(text)}`;
             container.appendChild(msg);
             container.scrollTop = container.scrollHeight;
@@ -980,12 +647,12 @@
         function raiseHand() {
             if (!roomCode) return;
             socket.emit('raise-hand', { roomCode, username, role });
-            displayMessage(username, 'raised hand ✋', role);
+            addMessage(username, 'raised hand ✋', role);
         }
 
         socket.on('hand-raised', (data) => {
             if (data.username !== username) {
-                displayMessage(data.username, 'raised hand ✋', data.role);
+                addMessage(data.username, 'raised hand ✋', data.role);
             }
             let alert = document.getElementById('hand-raise-alert');
             alert.innerText = `✋ ${data.username} raised their hand!`;
@@ -993,9 +660,6 @@
             setTimeout(() => alert.style.display = 'none', 5000);
         });
 
-        // ============================================
-        // EXIT
-        // ============================================
         function leaveRoom() {
             if (localStream) localStream.getTracks().forEach(t => t.stop());
             if (screenStream) screenStream.getTracks().forEach(t => t.stop());
@@ -1009,9 +673,7 @@
             cameraOn = false;
             screenOn = false;
             connectedPeers = {};
-            pendingCalls = [];
             roomCode = null;
-            exitFullscreen();
             
             let shareBtn = document.getElementById('shareScreenBtn');
             if (shareBtn) {
