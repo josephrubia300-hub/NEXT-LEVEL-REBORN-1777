@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 <title>Next Level Academy - Live Video Classroom</title>
 <style>
   * { box-sizing: border-box; }
@@ -15,52 +15,44 @@
     color:white;
   }
   .login-box {
-    background:rgba(255,255,255,0.95); color:#111; padding:50px 40px; border-radius:20px;
+    background:rgba(255,255,255,0.95); color:#111; padding:40px; border-radius:20px;
     text-align:center; max-width:400px; width:90%;
   }
   .login-box h2 { margin-bottom:30px; color:#2c3ea8; }
   .login-box input, .login-box select {
-    padding:14px; margin:14px 0; width:100%; border:1px solid #ccc; border-radius:10px;
+    padding:12px; margin:12px 0; width:100%; border:1px solid #ccc; border-radius:10px;
   }
-  .signup-link { margin-top:15px; color:#2c3ea8; cursor:pointer; text-decoration:underline; }
+  .signup-link { margin-top:15px; color:#2c3ea8; cursor:pointer; }
   
   button {
-    background:#2c3ea8; color:white; border:none; padding:12px 24px;
+    background:#2c3ea8; color:white; border:none; padding:10px 20px;
     border-radius:10px; cursor:pointer; margin:5px;
-    transition:all 0.2s;
   }
-  button:hover { background:#1c2c80; transform:scale(1.02); }
+  button:hover { background:#1c2c80; }
   button.end-class { background:#d32f2f; }
-  button.end-class:hover { background:#b71c1c; }
   button.leave-class { background:#ff9800; }
-  button.leave-class:hover { background:#e68900; }
   
   .dashboard { padding:20px; max-width:1400px; margin:0 auto; }
-  h2 { color:#2c3ea8; margin:20px 0; }
   .course-grid {
     display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
     gap:20px; margin:20px 0;
   }
   .course-card {
     background:linear-gradient(135deg,#5a6bff,#7a9cff); padding:20px;
-    border-radius:16px; color:white; cursor:pointer;
-    transition:transform 0.2s;
+    border-radius:16px; color:white;
   }
-  .course-card:hover { transform:translateY(-5px); }
   .course-card button {
-    background:white; color:#2c3ea8; margin-top:12px; border:none;
-    padding:8px 16px; border-radius:8px; cursor:pointer;
+    background:white; color:#2c3ea8; margin-top:12px;
   }
   
-  #classroom { display:none; padding:20px; background:#f0f2f5; min-height:100vh; }
+  #classroom { display:none; padding:20px; }
   #participants {
     display:flex; flex-wrap:wrap; gap:20px; justify-content:center; margin:20px 0;
   }
   .participant-wrapper {
     background:white; border-radius:16px; padding:12px;
-    width:300px; box-shadow:0 4px 12px rgba(0,0,0,0.1);
+    width:320px; box-shadow:0 4px 12px rgba(0,0,0,0.1);
     transition:all 0.3s ease;
-    cursor:pointer;
   }
   .participant-wrapper.expanded {
     position:fixed !important;
@@ -68,7 +60,7 @@
     left:50% !important;
     transform:translate(-50%, -50%) !important;
     width:90vw !important;
-    max-width:1200px !important;
+    max-width:1000px !important;
     z-index:10000 !important;
     background:black !important;
     box-shadow:0 0 0 1000px rgba(0,0,0,0.9) !important;
@@ -78,65 +70,35 @@
     height:auto !important;
     max-height:80vh !important;
   }
-  .participant-wrapper.expanded .participant-controls {
-    position:absolute;
-    bottom:20px;
-    left:0;
-    right:0;
-    background:rgba(0,0,0,0.7);
-    padding:10px;
-    border-radius:30px;
-    width:fit-content;
-    margin:0 auto;
-  }
   .participant-video {
     width:100%; border-radius:12px; background:#000;
     aspect-ratio:4/3; object-fit:cover;
-    pointer-events:none;
   }
   .teacher-video { border:3px solid #2196f3; }
   .student-video { border:3px solid #4caf50; }
   .screen-share-video { border:3px solid #ff9800; }
   .participant-label { margin-top:8px; font-weight:bold; text-align:center; }
-  .participant-controls { display:flex; justify-content:center; gap:10px; margin-top:8px; pointer-events:auto; }
-  .participant-controls button, .participant-controls input { pointer-events:auto; }
-  .mute-btn { background:#ff5722; padding:5px 10px; font-size:12px; border:none; border-radius:5px; cursor:pointer; color:white; }
-  .volume-slider { width:80px; cursor:pointer; }
-  .expand-btn { background:#2196f3; padding:5px 10px; font-size:12px; border:none; border-radius:5px; cursor:pointer; color:white; }
+  .participant-controls { display:flex; justify-content:center; gap:8px; margin-top:8px; flex-wrap:wrap; }
+  .mute-btn { background:#ff5722; padding:5px 10px; font-size:12px; }
+  .volume-slider { width:70px; }
+  .expand-btn { background:#2196f3; padding:5px 10px; font-size:12px; }
   
   #chat { max-width:800px; margin:20px auto; background:white; border-radius:16px; overflow:hidden; }
-  #messages { height:250px; overflow-y:auto; padding:15px; background:#fafafa; }
+  #messages { height:200px; overflow-y:auto; padding:15px; background:#fafafa; }
   .chat-message { padding:8px 12px; margin:5px 0; border-radius:10px; }
   .chat-message.teacher { background:#fff3e0; }
   .chat-message.student { background:#e3f2fd; }
   #chat-input-area { display:flex; border-top:1px solid #ddd; padding:10px; }
-  #chat-input { flex:1; padding:12px; border:1px solid #ddd; border-radius:8px; }
+  #chat-input { flex:1; padding:10px; border:1px solid #ddd; border-radius:8px; }
   #hand-raise-notification {
     position:fixed; top:20px; left:50%; transform:translateX(-50%);
     background:#ff5722; color:white; padding:12px 24px;
     border-radius:30px; z-index:1000; display:none;
   }
-  .start-lesson-box, .upload-box { background:white; padding:20px; border-radius:16px; margin:20px 0; }
-  .start-lesson-box input, .upload-box input { padding:10px; margin:10px 0; width:100%; max-width:300px; border:1px solid #ccc; border-radius:8px; }
+  .start-lesson-box { background:white; padding:20px; border-radius:16px; margin:20px 0; }
+  .start-lesson-box input { padding:10px; margin:10px 0; width:100%; max-width:300px; border:1px solid #ccc; border-radius:8px; }
   .error-message { color: red; background: #ffeeee; padding: 8px; border-radius: 5px; margin: 5px 0; display: none; }
   .welcome-hero { text-align:center; padding:40px; background:linear-gradient(135deg,#1a237e,#0d47a1); color:white; border-radius:20px; margin-bottom:20px; }
-  .hero-overlay { padding:20px; }
-  .close-expanded { display:none; }
-  .participant-wrapper.expanded .close-expanded {
-    display:block;
-    position:absolute;
-    top:20px;
-    right:20px;
-    background:red;
-    color:white;
-    border:none;
-    border-radius:50%;
-    width:40px;
-    height:40px;
-    font-size:20px;
-    cursor:pointer;
-    z-index:10001;
-  }
 </style>
 </head>
 <body>
@@ -151,21 +113,19 @@
       <option value="teacher">Teacher</option>
     </select><br>
     <button onclick="login()">Login</button>
-    <div class="signup-link" onclick="alert('Demo mode: Any username/password works')">Don't have an account? Sign Up</div>
+    <div class="signup-link" onclick="alert('Demo: any username/password works')">Sign Up</div>
   </div>
 </div>
 
 <div id="platform" style="display:none">
   <div class="welcome-hero">
-    <div class="hero-overlay">
-      <h1>Next Level Academy</h1>
-      <p id="welcomeMessage"></p>
-      <p id="roleGreeting"></p>
-    </div>
+    <h1>Next Level Academy</h1>
+    <p id="welcomeMessage"></p>
+    <p id="roleGreeting"></p>
   </div>
   <div class="dashboard">
     <h2>📚 Ongoing Classes</h2>
-    <div id="ongoingGrid" class="course-grid">Loading classes...</div>
+    <div id="ongoingGrid" class="course-grid">Loading...</div>
     <div id="teacherControls" style="display:none;">
       <div class="start-lesson-box">
         <h3>🚀 Start a New Lesson</h3>
@@ -177,14 +137,14 @@
 </div>
 
 <div id="classroom">
-  <div id="hand-raise-notification">✋ Someone raised their hand!</div>
-  <h2>🎥 Live Classroom - <span id="currentLessonTitle"></span></h2>
+  <div id="hand-raise-notification">✋ Hand raised!</div>
+  <h2>🎥 Live - <span id="currentLessonTitle"></span></h2>
   <div id="video-error" class="error-message"></div>
   <div id="participants"></div>
   <div id="chat">
     <div id="messages"></div>
     <div id="chat-input-area">
-      <input type="text" id="chat-input" placeholder="Type your message...">
+      <input type="text" id="chat-input" placeholder="Type message...">
       <button onclick="sendChatMessage()">Send</button>
     </div>
   </div>
@@ -202,23 +162,13 @@
 <script>
   const socket = io();
 
-  let role = "", username = "", currentRoomCode = null;
+  let role = "", username = "", roomCode = null;
   let localStream = null, screenStream = null;
-  let peer = null, myPeerId = null;
-  let connections = {}, screenConnections = {};
-  let peerInfo = {}, cameraActive = false, screenActive = false;
-  let pendingCalls = [];
+  let peer = null, myId = null;
+  let peers = {};  // peerId -> { call, type, stream }
+  let cameraActive = false, screenActive = false;
 
-  function escapeHtml(str) {
-    if (!str) return '';
-    return str.replace(/[&<>]/g, function(m) {
-      if (m === '&') return '&amp;';
-      if (m === '<') return '&lt;';
-      if (m === '>') return '&gt;';
-      return m;
-    });
-  }
-
+  // Helper
   function showError(msg) {
     const errDiv = document.getElementById('video-error');
     if (errDiv) {
@@ -229,6 +179,7 @@
     console.error(msg);
   }
 
+  // Login
   function login() {
     username = document.getElementById("username").value.trim();
     const pass = document.getElementById("password").value;
@@ -238,7 +189,7 @@
     document.getElementById("loginPage").style.display = "none";
     document.getElementById("platform").style.display = "block";
     document.getElementById("welcomeMessage").innerHTML = `Hello ${username}!`;
-    document.getElementById("roleGreeting").innerHTML = role === "teacher" ? "✨ You are a Teacher ✨" : "📖 You are a Student 📖";
+    document.getElementById("roleGreeting").innerHTML = role === "teacher" ? "✨ You are a Teacher" : "📖 You are a Student";
     
     if (role === "teacher") document.getElementById("teacherControls").style.display = "block";
     
@@ -256,22 +207,26 @@
     socket.emit('get-rooms');
   }
 
+  // Room list
   socket.on('room-list', (rooms) => {
     const grid = document.getElementById("ongoingGrid");
     if (!rooms || rooms.length === 0) {
-      grid.innerHTML = '<div class="course-card">No ongoing classes yet. A teacher needs to start one.</div>';
+      grid.innerHTML = '<div class="course-card">No classes yet. Teacher needs to start one.</div>';
       return;
     }
     grid.innerHTML = rooms.map(room => `
       <div class="course-card">
         <h3>${escapeHtml(room.title)}</h3>
         <p>👩‍🏫 ${escapeHtml(room.teacher)}</p>
-        <p>👥 ${room.studentsCount} students</p>
-        <button onclick="joinClass('${escapeHtml(room.code)}')">Join Class</button>
+        <p>👥 ${room.studentsCount}</p>
+        <button onclick="joinClass('${escapeHtml(room.code)}')">Join</button>
       </div>
     `).join('');
   });
 
+  function escapeHtml(str) { return str?.replace(/[&<>]/g, function(m) { return m === '&' ? '&amp;' : m === '<' ? '&lt;' : '&gt;'; }) || ''; }
+
+  // Create/Join room
   function startLesson() {
     const title = document.getElementById("lessonTitle").value.trim();
     if (!title) return alert("Enter lesson title");
@@ -279,16 +234,16 @@
   }
 
   socket.on('room-created', (data) => {
-    currentRoomCode = data.roomCode;
+    roomCode = data.roomCode;
     document.getElementById("currentLessonTitle").innerHTML = escapeHtml(data.lessonTitle);
     document.getElementById("platform").style.display = "none";
     document.getElementById("classroom").style.display = "block";
     initPeer();
   });
 
-  function joinClass(roomCode) {
-    currentRoomCode = roomCode;
-    socket.emit('join-room', { username, roomCode });
+  function joinClass(code) {
+    roomCode = code;
+    socket.emit('join-room', { username, roomCode: code });
   }
 
   socket.on('room-info', (data) => {
@@ -298,8 +253,9 @@
     initPeer();
   });
 
+  // ========== PEERJS ==========
   function initPeer() {
-    console.log("Initializing PeerJS...");
+    console.log("Init PeerJS...");
     peer = new Peer(undefined, {
       host: '0.peerjs.com',
       port: 443,
@@ -308,112 +264,64 @@
         iceServers: [
           { urls: 'stun:stun.l.google.com:19302' },
           { urls: 'stun:stun1.l.google.com:19302' },
-          { urls: 'stun:stun2.l.google.com:19302' },
-          { urls: 'stun:stun3.l.google.com:19302' },
-          { urls: 'stun:stun4.l.google.com:19302' }
+          { urls: 'stun:stun2.l.google.com:19302' }
         ]
       }
     });
 
     peer.on('open', (id) => {
-      myPeerId = id;
+      myId = id;
       console.log("My Peer ID:", id);
-      socket.emit('share-peer-id', { roomCode: currentRoomCode, peerId: id });
+      socket.emit('share-peer-id', { roomCode, peerId: id });
     });
 
     peer.on('call', (call) => {
-      console.log("Incoming call from", call.peer);
-      if (call.metadata && call.metadata.type === 'screen') {
-        if (screenStream) {
-          call.answer(screenStream);
-          setupScreenCall(call);
-        } else {
-          pendingCalls.push({ call, type: 'screen' });
-        }
-      } else if (localStream) {
+      console.log("Incoming call from", call.peer, "metadata:", call.metadata);
+      const isScreen = call.metadata?.type === 'screen';
+      
+      if (isScreen && screenStream) {
+        call.answer(screenStream);
+        handleCall(call, 'screen');
+      } else if (!isScreen && localStream) {
         call.answer(localStream);
-        setupCall(call);
+        handleCall(call, 'camera');
       } else {
-        pendingCalls.push({ call, type: 'camera' });
+        // Store for later when stream is ready
+        console.log("Stream not ready yet, storing call");
+        if (!window.pendingCalls) window.pendingCalls = [];
+        window.pendingCalls.push({ call, isScreen });
       }
     });
 
-    peer.on('error', (err) => console.error("PeerJS error:", err));
+    peer.on('error', (err) => console.error("Peer error:", err));
+  }
+
+  function handleCall(call, type) {
+    call.on('stream', (stream) => {
+      console.log(`Received ${type} stream from`, call.peer);
+      displayVideo(call.peer, stream, type);
+    });
+    peers[call.peer] = { call, type, stream: null };
   }
 
   socket.on('new-peer', ({ peerId }) => {
-    console.log("New peer, connecting to:", peerId);
-    const conn = peer.connect(peerId);
-    setupDataConnection(conn);
+    console.log("New peer:", peerId);
+    // Send camera if available
     if (localStream) {
       const call = peer.call(peerId, localStream);
-      setupCall(call);
+      handleCall(call, 'camera');
     }
+    // Send screen if available
     if (screenStream) {
       const screenCall = peer.call(peerId, screenStream, { metadata: { type: 'screen' } });
-      setupScreenCall(screenCall);
+      handleCall(screenCall, 'screen');
     }
   });
 
-  function setupDataConnection(conn) {
-    conn.on('open', () => {
-      conn.send({ type: 'info', username, role });
-    });
-    conn.on('data', (data) => {
-      if (data.type === 'info') {
-        peerInfo[conn.peer] = { username: data.username, role: data.role };
-        updateVideoLabels();
-      } else if (data.type === 'chat') {
-        addChatMessage(data.sender, data.text, data.role);
-      } else if (data.type === 'hand') {
-        addChatMessage(data.sender, "raised hand ✋", data.role);
-        const notif = document.getElementById("hand-raise-notification");
-        notif.textContent = `✋ ${data.sender} raised their hand!`;
-        notif.style.display = "block";
-        setTimeout(() => notif.style.display = "none", 5000);
-      }
-    });
-  }
-
-  function setupCall(call) {
-    call.on('stream', (stream) => {
-      console.log("Received camera stream from", call.peer);
-      displayRemoteVideo(call.peer, stream, 'camera');
-    });
-    connections[call.peer] = call;
-  }
-
-  function setupScreenCall(call) {
-    call.on('stream', (stream) => {
-      console.log("Received screen stream from", call.peer);
-      displayRemoteVideo(call.peer, stream, 'screen');
-    });
-    screenConnections[call.peer] = call;
-  }
-
-  function updateVideoLabels() {
-    // Update labels for all remote videos
-    Object.keys(peerInfo).forEach(peerId => {
-      const wrapper = document.getElementById(`remote-${peerId}`) || document.getElementById(`remote-screen-${peerId}`);
-      if (wrapper) {
-        const label = wrapper.querySelector('.participant-label');
-        if (label && peerInfo[peerId]) {
-          const isScreen = wrapper.id.includes('screen');
-          label.textContent = isScreen 
-            ? `${peerInfo[peerId].username} (Screen Share)`
-            : `${peerInfo[peerId].username} (${peerInfo[peerId].role === 'teacher' ? 'Teacher' : 'Student'})`;
-        }
-        const video = wrapper.querySelector('video');
-        if (video && peerInfo[peerId] && peerInfo[peerId].role === 'teacher') {
-          video.classList.add('teacher-video');
-        }
-      }
-    });
-  }
-
-  function displayRemoteVideo(peerId, stream, type) {
+  // Display video
+  function displayVideo(peerId, stream, type) {
     const container = document.getElementById("participants");
-    const existingId = type === 'screen' ? `remote-screen-${peerId}` : `remote-${peerId}`;
+    const existingId = `video-${peerId}-${type}`;
     if (document.getElementById(existingId)) return;
 
     const wrapper = document.createElement("div");
@@ -423,22 +331,14 @@
     const video = document.createElement("video");
     video.className = "participant-video";
     if (type === 'screen') video.classList.add("screen-share-video");
-    else if (peerInfo[peerId] && peerInfo[peerId].role === 'teacher') video.classList.add("teacher-video");
-    else video.classList.add("student-video");
-    
+    else if (type === 'camera') video.classList.add("student-video");
     video.autoplay = true;
     video.playsInline = true;
     video.srcObject = stream;
 
     const label = document.createElement("div");
     label.className = "participant-label";
-    let displayName = type === 'screen' ? "Screen Share" : (peerInfo[peerId]?.role === 'teacher' ? "Teacher" : "Student");
-    if (peerInfo[peerId] && peerInfo[peerId].username) {
-      displayName = type === 'screen' 
-        ? `${peerInfo[peerId].username} (Screen Share)`
-        : `${peerInfo[peerId].username} (${peerInfo[peerId].role === 'teacher' ? 'Teacher' : 'Student'})`;
-    }
-    label.textContent = displayName;
+    label.textContent = type === 'screen' ? "📺 Screen Share" : `👤 ${peerId.slice(0,8)}`;
 
     const controls = document.createElement("div");
     controls.className = "participant-controls";
@@ -462,14 +362,11 @@
     volumeSlider.step = 0.1;
     volumeSlider.value = 1;
     volumeSlider.className = "volume-slider";
-    volumeSlider.oninput = (e) => {
-      e.stopPropagation();
-      video.volume = parseFloat(e.target.value);
-    };
+    volumeSlider.oninput = (e) => { video.volume = parseFloat(e.target.value); };
 
     const expandBtn = document.createElement("button");
     expandBtn.className = "expand-btn";
-    expandBtn.textContent = "🖥️ Expand";
+    expandBtn.textContent = "🔍 Expand";
     expandBtn.onclick = (e) => {
       e.stopPropagation();
       document.querySelectorAll('.participant-wrapper.expanded').forEach(w => w.classList.remove('expanded'));
@@ -479,30 +376,13 @@
     controls.appendChild(muteBtn);
     controls.appendChild(volumeSlider);
     controls.appendChild(expandBtn);
-
-    const closeBtn = document.createElement("button");
-    closeBtn.className = "close-expanded";
-    closeBtn.textContent = "✕";
-    closeBtn.onclick = (e) => {
-      e.stopPropagation();
-      wrapper.classList.remove('expanded');
-    };
-
     wrapper.appendChild(video);
     wrapper.appendChild(label);
     wrapper.appendChild(controls);
-    wrapper.appendChild(closeBtn);
-    
-    wrapper.onclick = (e) => {
-      if (e.target === wrapper || e.target === video) {
-        document.querySelectorAll('.participant-wrapper.expanded').forEach(w => w.classList.remove('expanded'));
-        wrapper.classList.add('expanded');
-      }
-    };
-    
     container.appendChild(wrapper);
   }
 
+  // Start Camera
   function startCamera() {
     if (cameraActive) return alert("Camera already active");
     
@@ -511,7 +391,7 @@
         localStream = stream;
         cameraActive = true;
         
-        // Display local video
+        // Show local video
         const wrapper = document.createElement("div");
         wrapper.className = "participant-wrapper";
         wrapper.id = "local-video";
@@ -546,71 +426,55 @@
         volumeSlider.max = 1;
         volumeSlider.step = 0.1;
         volumeSlider.value = 1;
-        volumeSlider.className = "volume-slider";
         volumeSlider.oninput = (e) => video.volume = parseFloat(e.target.value);
         
         const expandBtn = document.createElement("button");
         expandBtn.className = "expand-btn";
-        expandBtn.textContent = "🖥️ Expand";
+        expandBtn.textContent = "🔍 Expand";
         expandBtn.onclick = () => wrapper.classList.toggle('expanded');
         
         controls.appendChild(muteBtn);
         controls.appendChild(volumeSlider);
         controls.appendChild(expandBtn);
-        
         wrapper.appendChild(video);
         wrapper.appendChild(label);
         wrapper.appendChild(controls);
         document.getElementById("participants").appendChild(wrapper);
         
-        // Answer any pending calls
-        pendingCalls.forEach(({ call, type }) => {
-          if (type === 'camera') {
-            call.answer(stream);
-            setupCall(call);
-          } else if (type === 'screen' && screenStream) {
-            call.answer(screenStream);
-            setupScreenCall(call);
-          }
-        });
-        pendingCalls = [];
+        // Answer pending calls
+        if (window.pendingCalls) {
+          window.pendingCalls.forEach(({ call, isScreen }) => {
+            if (!isScreen) {
+              call.answer(stream);
+              handleCall(call, 'camera');
+            }
+          });
+          window.pendingCalls = [];
+        }
         
-        // Call all peers with camera stream
-        const peers = Object.keys(connections);
-        peers.forEach(peerId => {
-          if (!connections[peerId]) {
+        // Call all existing peers
+        Object.keys(peers).forEach(peerId => {
+          if (!peers[peerId] || peers[peerId].type !== 'camera') {
             const call = peer.call(peerId, stream);
-            setupCall(call);
+            handleCall(call, 'camera');
           }
         });
       })
       .catch(err => {
-        console.error("Camera error:", err);
-        let errorMsg = err.name === "NotAllowedError" ? "Please allow camera and microphone access." : err.message;
-        showError("Camera error: " + errorMsg);
-        alert("Camera access denied. Please check browser permissions.");
+        showError("Camera error: " + err.message);
         cameraActive = false;
       });
   }
 
+  // Share Screen
   function shareScreen() {
     if (screenActive) {
-      // Stop sharing
-      if (screenStream) {
-        screenStream.getTracks().forEach(track => track.stop());
-        screenStream = null;
-      }
+      if (screenStream) screenStream.getTracks().forEach(t => t.stop());
+      screenStream = null;
       screenActive = false;
-      const screenWrapper = document.getElementById("local-screen-share");
-      if (screenWrapper) screenWrapper.remove();
-      Object.values(screenConnections).forEach(call => call.close());
-      screenConnections = {};
+      const wrapper = document.getElementById("local-screen-share");
+      if (wrapper) wrapper.remove();
       alert("Screen sharing stopped");
-      return;
-    }
-
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
-      showError("Screen sharing is not supported in this browser");
       return;
     }
 
@@ -618,80 +482,59 @@
       .then(stream => {
         screenStream = stream;
         screenActive = true;
-
-        // Display local screen share
+        
+        // Show local screen
         const wrapper = document.createElement("div");
         wrapper.className = "participant-wrapper";
         wrapper.id = "local-screen-share";
-
+        
         const video = document.createElement("video");
         video.className = "participant-video screen-share-video";
         video.autoplay = true;
-        video.playsInline = true;
         video.srcObject = stream;
-
+        
         const label = document.createElement("div");
         label.className = "participant-label";
         label.textContent = `${username} (Screen Share - You)`;
-
-        const controls = document.createElement("div");
-        controls.className = "participant-controls";
-
+        
         const stopBtn = document.createElement("button");
-        stopBtn.textContent = "⏹️ Stop Sharing";
+        stopBtn.textContent = "⏹️ Stop";
         stopBtn.style.background = "#d32f2f";
         stopBtn.onclick = () => {
-          if (screenStream) {
-            screenStream.getTracks().forEach(track => track.stop());
-            screenStream = null;
-          }
+          if (screenStream) screenStream.getTracks().forEach(t => t.stop());
+          screenStream = null;
           screenActive = false;
           wrapper.remove();
-          Object.values(screenConnections).forEach(call => call.close());
-          screenConnections = {};
         };
-
-        controls.appendChild(stopBtn);
+        
         wrapper.appendChild(video);
         wrapper.appendChild(label);
-        wrapper.appendChild(controls);
+        wrapper.appendChild(stopBtn);
         document.getElementById("participants").appendChild(wrapper);
-
-        // Broadcast screen stream to all connected peers
-        const peers = Object.keys(connections);
-        peers.forEach(peerId => {
-          if (peerId !== myPeerId) {
-            const screenCall = peer.call(peerId, stream, { metadata: { type: 'screen' } });
-            setupScreenCall(screenCall);
-            screenConnections[peerId] = screenCall;
-          }
+        
+        // Broadcast to all peers
+        Object.keys(peers).forEach(peerId => {
+          const screenCall = peer.call(peerId, stream, { metadata: { type: 'screen' } });
+          handleCall(screenCall, 'screen');
         });
-
-        // Also broadcast to any peers that join later
+        
         stream.getVideoTracks()[0].onended = () => {
-          if (screenStream) {
-            screenStream.getTracks().forEach(track => track.stop());
-            screenStream = null;
-          }
+          screenStream = null;
           screenActive = false;
-          const screenWrapper = document.getElementById("local-screen-share");
-          if (screenWrapper) screenWrapper.remove();
-          Object.values(screenConnections).forEach(call => call.close());
-          screenConnections = {};
+          if (wrapper) wrapper.remove();
         };
       })
       .catch(err => {
-        console.error("Screen share error:", err);
-        let errorMsg = err.name === "NotAllowedError" ? "Permission denied. Please allow screen sharing." : err.message;
-        showError("Screen share failed: " + errorMsg);
+        showError("Screen share failed: " + err.message);
       });
   }
 
+  // Chat
   function sendChatMessage() {
     const input = document.getElementById("chat-input");
     const text = input.value.trim();
-    if (!text || !currentRoomCode) return;
-    socket.emit('chat', { roomCode: currentRoomCode, username, message: text });
+    if (!text || !roomCode) return;
+    socket.emit('chat', { roomCode, username, message: text });
     addChatMessage(username, text, role);
     input.value = "";
   }
@@ -710,8 +553,8 @@
   }
 
   function raiseHand() {
-    if (!currentRoomCode) return;
-    socket.emit('raise-hand', { roomCode: currentRoomCode, username });
+    if (!roomCode) return;
+    socket.emit('raise-hand', { roomCode, username });
     addChatMessage(username, "raised hand ✋", role);
   }
 
@@ -723,11 +566,6 @@
     setTimeout(() => notif.style.display = "none", 5000);
   });
 
-  function exitClass() {
-    if (role === "teacher") endClass();
-    else leaveClass();
-  }
-
   function leaveClass() {
     if (localStream) localStream.getTracks().forEach(t => t.stop());
     if (screenStream) screenStream.getTracks().forEach(t => t.stop());
@@ -738,17 +576,19 @@
     document.getElementById("platform").style.display = "block";
     cameraActive = false;
     screenActive = false;
-    currentRoomCode = null;
-    connections = {};
-    screenConnections = {};
-    peerInfo = {};
-    pendingCalls = [];
+    peers = {};
+    window.pendingCalls = [];
   }
 
   function endClass() {
     if (role !== "teacher") return;
-    socket.emit('end-class', { roomCode: currentRoomCode });
+    socket.emit('end-class', { roomCode });
     leaveClass();
+  }
+
+  function exitClass() {
+    if (role === "teacher") endClass();
+    else leaveClass();
   }
 </script>
 </body>
