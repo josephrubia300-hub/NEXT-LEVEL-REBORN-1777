@@ -915,4 +915,55 @@
             // Don't add locally, wait for server echo
         }
 
-        socket.on('hand-raised', (data
+        socket.on('hand-raised', (data) => {
+            if (processedMessages.has(data.messageId)) return;
+            processedMessages.add(data.messageId);
+            setTimeout(() => processedMessages.delete(data.messageId), 500);
+            
+            addChatMessageToUI(data.username, 'raised hand ✋', data.role, data.messageId);
+            
+            let alert = document.getElementById('hand-raise-alert');
+            alert.innerText = `✋ ${escapeHtml(data.username)} raised their hand!`;
+            alert.style.display = 'block';
+            setTimeout(() => alert.style.display = 'none', 5000);
+        });
+
+        function leaveRoom() {
+            if (localStream) localStream.getTracks().forEach(t => t.stop());
+            if (screenStream) screenStream.getTracks().forEach(t => t.stop());
+            if (peer) peer.destroy();
+            
+            socket.emit('leave-room', { roomCode, username, role, peerId: myPeerId });
+            
+            document.getElementById('participants').innerHTML = '';
+            document.getElementById('messages').innerHTML = '';
+            document.getElementById('classroom').style.display = 'none';
+            document.getElementById('platform').style.display = 'block';
+            
+            cameraOn = false;
+            screenOn = false;
+            connectedPeers = {};
+            peerUserInfo = {};
+            roomCode = null;
+            processedMessages.clear();
+            
+            let shareBtn = document.getElementById('shareScreenBtn');
+            if (shareBtn) {
+                shareBtn.innerText = '🖥️ Share Screen';
+                shareBtn.style.background = '';
+            }
+            if (isMobile()) exitFullscreen();
+            
+            if (role === 'teacher') {
+                socket.emit('get-rooms');
+            }
+        }
+
+        function endClass() {
+            if (role !== 'teacher') return;
+            socket.emit('end-class', { roomCode });
+            leaveRoom();
+        }
+    </script>
+</body>
+</html>
