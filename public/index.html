@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=yes">
     <title>Next Level Academy</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -95,11 +95,12 @@
             margin: 20px 0;
         }
         .video-container {
-            background: white;
+            background: black;
             border-radius: 16px;
-            padding: 12px;
+            padding: 8px;
             width: 360px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            position: relative;
         }
         .video-container video {
             width: 100%;
@@ -109,19 +110,87 @@
             object-fit: cover;
         }
         .video-container .label {
-            margin-top: 8px;
+            position: absolute;
+            bottom: 15px;
+            left: 15px;
+            background: rgba(0,0,0,0.6);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
             font-weight: bold;
-            text-align: center;
+            z-index: 5;
         }
         .video-controls {
+            position: absolute;
+            bottom: 15px;
+            right: 15px;
             display: flex;
-            justify-content: center;
             gap: 8px;
-            margin-top: 8px;
+            z-index: 5;
         }
         .video-controls button, .video-controls input {
             padding: 5px 10px;
-            font-size: 12px;
+            font-size: 11px;
+            background: rgba(0,0,0,0.6);
+            border: none;
+            border-radius: 20px;
+            color: white;
+            cursor: pointer;
+        }
+        .video-controls input { width: 70px; }
+
+        /* FULLSCREEN EXPANDED MODE */
+        .video-container.expanded {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            max-width: none !important;
+            border-radius: 0 !important;
+            z-index: 10000 !important;
+            background: black !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }
+        .video-container.expanded video {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: contain !important;
+            border-radius: 0 !important;
+        }
+        .video-container.expanded .label {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0,0,0,0.7);
+            font-size: 16px;
+            padding: 8px 16px;
+        }
+        .video-container.expanded .video-controls {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+        }
+        .video-container.expanded .expand-close {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: red;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            font-size: 24px;
+            cursor: pointer;
+            z-index: 10001;
         }
 
         #chat {
@@ -175,7 +244,7 @@
             margin: 10px;
             display: none;
         }
-        .screen-share { border: 3px solid #ff9800 !important; }
+        .screen-share { border: 2px solid #ff9800 !important; }
     </style>
 </head>
 <body>
@@ -268,6 +337,17 @@
             return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
         }
 
+        function requestFullscreen(element) {
+            if (element.requestFullscreen) element.requestFullscreen();
+            else if (element.webkitRequestFullscreen) element.webkitRequestFullscreen();
+            else if (element.msRequestFullscreen) element.msRequestFullscreen();
+        }
+
+        function exitFullscreen() {
+            if (document.exitFullscreen) document.exitFullscreen();
+            else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+        }
+
         function login() {
             username = document.getElementById('username').value.trim();
             let pass = document.getElementById('password').value;
@@ -358,7 +438,6 @@
                 console.log('My Peer ID:', id);
                 socket.emit('share-peer-id', { roomCode, peerId: id });
                 
-                // After PeerJS is open, call any pending calls
                 pendingCalls.forEach(p => {
                     if (p.type === 'camera' && localStream) {
                         p.call.answer(localStream);
@@ -436,7 +515,8 @@
             
             let muteBtn = document.createElement('button');
             muteBtn.innerText = '🔊 Mute';
-            muteBtn.onclick = () => {
+            muteBtn.onclick = (e) => {
+                e.stopPropagation();
                 let audio = stream.getAudioTracks()[0];
                 if (audio) {
                     audio.enabled = !audio.enabled;
@@ -451,14 +531,41 @@
             volSlider.step = 0.05;
             volSlider.value = 1;
             volSlider.style.width = '70px';
-            volSlider.oninput = () => video.volume = parseFloat(volSlider.value);
+            volSlider.oninput = (e) => {
+                e.stopPropagation();
+                video.volume = parseFloat(volSlider.value);
+            };
+            
+            let expandBtn = document.createElement('button');
+            expandBtn.innerText = '🔍 Expand';
+            expandBtn.onclick = (e) => {
+                e.stopPropagation();
+                document.querySelectorAll('.video-container.expanded').forEach(v => v.classList.remove('expanded'));
+                div.classList.add('expanded');
+                if (isMobile()) {
+                    requestFullscreen(div);
+                }
+            };
             
             controls.appendChild(muteBtn);
             controls.appendChild(volSlider);
+            controls.appendChild(expandBtn);
+            
+            let closeBtn = document.createElement('button');
+            closeBtn.className = 'expand-close';
+            closeBtn.innerHTML = '✕';
+            closeBtn.onclick = (e) => {
+                e.stopPropagation();
+                div.classList.remove('expanded');
+                if (isMobile()) {
+                    exitFullscreen();
+                }
+            };
             
             div.appendChild(video);
             div.appendChild(label);
             div.appendChild(controls);
+            div.appendChild(closeBtn);
             container.appendChild(div);
         }
 
@@ -475,7 +582,6 @@
                     localStream = stream;
                     cameraOn = true;
                     
-                    // Show local video
                     let container = document.getElementById('participants');
                     let existing = document.getElementById('local-video');
                     if (existing) existing.remove();
@@ -515,20 +621,40 @@
                     volSlider.value = 1;
                     volSlider.oninput = () => video.volume = parseFloat(volSlider.value);
                     
+                    let expandBtn = document.createElement('button');
+                    expandBtn.innerText = '🔍 Expand';
+                    expandBtn.onclick = () => {
+                        div.classList.toggle('expanded');
+                        if (isMobile() && div.classList.contains('expanded')) {
+                            requestFullscreen(div);
+                        } else if (!div.classList.contains('expanded')) {
+                            exitFullscreen();
+                        }
+                    };
+                    
                     controls.appendChild(muteBtn);
                     controls.appendChild(volSlider);
+                    controls.appendChild(expandBtn);
+                    
+                    let closeBtn = document.createElement('button');
+                    closeBtn.className = 'expand-close';
+                    closeBtn.innerHTML = '✕';
+                    closeBtn.onclick = () => {
+                        div.classList.remove('expanded');
+                        if (isMobile()) exitFullscreen();
+                    };
+                    
                     div.appendChild(video);
                     div.appendChild(label);
                     div.appendChild(controls);
+                    div.appendChild(closeBtn);
                     container.appendChild(div);
                     
-                    // Call all existing peers
                     Object.keys(connectedPeers).forEach(pid => {
                         let call = peer.call(pid, stream);
                         handleCall(call, 'camera');
                     });
                     
-                    // Answer any pending camera calls
                     for (let i = 0; i < pendingCalls.length; i++) {
                         if (pendingCalls[i].type === 'camera') {
                             pendingCalls[i].call.answer(stream);
@@ -561,7 +687,6 @@
                     shareBtn.innerText = '⏹️ Stop Sharing';
                     shareBtn.style.background = '#d32f2f';
                     
-                    // Show local screen
                     let container = document.getElementById('participants');
                     let existing = document.getElementById('local-screen');
                     if (existing) existing.remove();
@@ -588,19 +713,39 @@
                     stopBtn.style.background = '#d32f2f';
                     stopBtn.onclick = () => stopScreenShare();
                     
+                    let expandBtn = document.createElement('button');
+                    expandBtn.innerText = '🔍 Expand';
+                    expandBtn.onclick = () => {
+                        div.classList.toggle('expanded');
+                        if (isMobile() && div.classList.contains('expanded')) {
+                            requestFullscreen(div);
+                        } else if (!div.classList.contains('expanded')) {
+                            exitFullscreen();
+                        }
+                    };
+                    
                     controls.appendChild(stopBtn);
+                    controls.appendChild(expandBtn);
+                    
+                    let closeBtn = document.createElement('button');
+                    closeBtn.className = 'expand-close';
+                    closeBtn.innerHTML = '✕';
+                    closeBtn.onclick = () => {
+                        div.classList.remove('expanded');
+                        if (isMobile()) exitFullscreen();
+                    };
+                    
                     div.appendChild(video);
                     div.appendChild(label);
                     div.appendChild(controls);
+                    div.appendChild(closeBtn);
                     container.appendChild(div);
                     
-                    // Call all existing peers with screen
                     Object.keys(connectedPeers).forEach(pid => {
                         let call = peer.call(pid, stream, { metadata: { type: 'screen' } });
                         handleCall(call, 'screen');
                     });
                     
-                    // Answer any pending screen calls
                     for (let i = 0; i < pendingCalls.length; i++) {
                         if (pendingCalls[i].type === 'screen') {
                             pendingCalls[i].call.answer(stream);
@@ -643,14 +788,13 @@
             let text = input.value.trim();
             if (!text || !roomCode) return;
             
-            console.log('Sending message - role:', role, 'username:', username);
-            socket.emit('chat', { roomCode, username, message: text, role });
+            // IMPORTANT: Send role correctly
+            socket.emit('chat', { roomCode, username, message: text, role: role });
             addMessage(username, text, role);
             input.value = '';
         }
 
         socket.on('chat', (data) => {
-            console.log('Received chat - role:', data.role, 'username:', data.username);
             if (data.username !== username) {
                 addMessage(data.username, data.message, data.role);
             }
@@ -676,7 +820,7 @@
 
         function raiseHand() {
             if (!roomCode) return;
-            socket.emit('raise-hand', { roomCode, username, role });
+            socket.emit('raise-hand', { roomCode, username, role: role });
             addMessage(username, 'raised hand ✋', role);
         }
 
@@ -710,6 +854,7 @@
                 shareBtn.innerText = '🖥️ Share Screen';
                 shareBtn.style.background = '';
             }
+            if (isMobile()) exitFullscreen();
             
             if (role === 'teacher') {
                 socket.emit('get-rooms');
