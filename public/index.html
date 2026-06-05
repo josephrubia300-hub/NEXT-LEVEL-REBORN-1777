@@ -414,7 +414,7 @@
             document.getElementById('room-title').innerHTML = escapeHtml(data.lessonTitle);
             document.getElementById('platform').style.display = 'none';
             document.getElementById('classroom').style.display = 'block';
-            addSystemMessage(`🎉 ${username} (Teacher) created this class`);
+            addSystemMessage(`🎉 ${escapeHtml(username)} (Teacher) created this class`);
             initPeer();
         });
 
@@ -427,19 +427,35 @@
             document.getElementById('room-title').innerHTML = escapeHtml(data.lessonTitle);
             document.getElementById('platform').style.display = 'none';
             document.getElementById('classroom').style.display = 'block';
-            addSystemMessage(`👋 ${username} (Student) joined the class`);
+            addSystemMessage(`👋 ${escapeHtml(username)} (${role === 'teacher' ? 'Teacher' : 'Student'}) joined the class`);
             initPeer();
         });
 
         socket.on('user-joined', (data) => {
             if (data.username !== username) {
-                addSystemMessage(`👋 ${data.username} (${data.role}) joined the class`);
+                addSystemMessage(`👋 ${escapeHtml(data.username)} (${data.role === 'teacher' ? 'Teacher' : 'Student'}) joined the class`);
             }
         });
 
         socket.on('user-left', (data) => {
-            addSystemMessage(`👋 A participant left the class`);
+            addSystemMessage(`👋 ${escapeHtml(data.username)} (${data.role === 'teacher' ? 'Teacher' : 'Student'}) left the class`);
+            // Remove video when user leaves
+            if (data.peerId) {
+                removeAllVideosForPeer(data.peerId);
+            }
         });
+
+        function removeAllVideosForPeer(peerId) {
+            // Remove camera video
+            let cameraEl = document.getElementById(`video-${peerId}-camera`);
+            if (cameraEl) cameraEl.remove();
+            // Remove screen share video
+            let screenEl = document.getElementById(`video-${peerId}-screen`);
+            if (screenEl) screenEl.remove();
+            // Clean up peer data
+            delete connectedPeers[peerId];
+            delete peerUserInfo[peerId];
+        }
 
         function initPeer() {
             console.log('Initializing PeerJS...');
@@ -460,14 +476,6 @@
                 myPeerId = id;
                 console.log('My Peer ID:', id);
                 socket.emit('share-peer-id', { roomCode, peerId: id });
-                
-                // Send my info to all peers via data connection
-                Object.keys(connectedPeers).forEach(pid => {
-                    const conn = peer.connect(pid);
-                    conn.on('open', () => {
-                        conn.send({ type: 'info', username, role });
-                    });
-                });
                 
                 pendingCalls.forEach(p => {
                     if (p.type === 'camera' && localStream) {
@@ -529,7 +537,7 @@
             let info = peerUserInfo[peerId];
             if (!info) return;
             
-            let displayName = info.role === 'teacher' ? 'Teacher' : `Student (${info.username})`;
+            let displayName = info.role === 'teacher' ? 'Teacher' : `Student (${escapeHtml(info.username)})`;
             
             let cameraEl = document.getElementById(`video-${peerId}-camera`);
             if (cameraEl) {
@@ -548,7 +556,10 @@
                 console.log(`Received ${type} stream from`, call.peer);
                 addVideo(call.peer, stream, type);
             });
-            call.on('close', () => removeVideo(call.peer, type));
+            call.on('close', () => {
+                console.log(`Call closed from`, call.peer);
+                removeAllVideosForPeer(call.peer);
+            });
             connectedPeers[call.peer] = { call, type };
         }
 
@@ -570,7 +581,7 @@
             let info = peerUserInfo[peerId];
             let displayName = 'Participant';
             if (info) {
-                displayName = info.role === 'teacher' ? 'Teacher' : `Student (${info.username})`;
+                displayName = info.role === 'teacher' ? 'Teacher' : `Student (${escapeHtml(info.username)})`;
             }
             if (type === 'screen') displayName = `${displayName} (Screen)`;
 
@@ -637,11 +648,6 @@
             container.appendChild(div);
         }
 
-        function removeVideo(peerId, type) {
-            let el = document.getElementById(`video-${peerId}-${type}`);
-            if (el) el.remove();
-        }
-
         function startCamera() {
             if (cameraOn) return alert('Camera already active');
             
@@ -666,7 +672,7 @@
                     
                     let label = document.createElement('div');
                     label.className = 'label';
-                    label.innerText = `${username} (You)`;
+                    label.innerText = `${escapeHtml(username)} (You)`;
                     
                     let controls = document.createElement('div');
                     controls.className = 'video-controls';
@@ -771,7 +777,7 @@
                     
                     let label = document.createElement('div');
                     label.className = 'label';
-                    label.innerText = `${username} (Screen - You)`;
+                    label.innerText = `${escapeHtml(username)} (Screen - You)`;
                     
                     let controls = document.createElement('div');
                     controls.className = 'video-controls';
@@ -867,9 +873,8 @@
         }
 
         socket.on('chat', (data) => {
-            if (data.username !== username) {
-                addChatMessage(data.username, data.message, data.role);
-            }
+            // Always display message with the role sent from the sender
+            addChatMessage(data.username, data.message, data.role);
         });
 
         function addChatMessage(sender, text, senderRole) {
@@ -896,11 +901,9 @@
         }
 
         socket.on('hand-raised', (data) => {
-            if (data.username !== username) {
-                addChatMessage(data.username, 'raised hand ✋', data.role);
-            }
+            addChatMessage(data.username, 'raised hand ✋', data.role);
             let alert = document.getElementById('hand-raise-alert');
-            alert.innerText = `✋ ${data.username} raised their hand!`;
+            alert.innerText = `✋ ${escapeHtml(data.username)} raised their hand!`;
             alert.style.display = 'block';
             setTimeout(() => alert.style.display = 'none', 5000);
         });
@@ -910,7 +913,9 @@
             if (screenStream) screenStream.getTracks().forEach(t => t.stop());
             if (peer) peer.destroy();
             
-            addSystemMessage(`👋 ${username} (${role}) left the class`);
+            // Notify server about leaving
+            socket.emit('leave-room', { roomCode, username, role });
+            addSystemMessage(`👋 ${escapeHtml(username)} (${role === 'teacher' ? 'Teacher' : 'Student'}) left the class`);
             
             document.getElementById('participants').innerHTML = '';
             document.getElementById('messages').innerHTML = '';
