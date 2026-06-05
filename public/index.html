@@ -417,6 +417,11 @@
             });
         }
 
+        // Helper: Check if mobile device
+        function isMobileDevice() {
+            return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+        }
+
         // ============================================
         // LOGIN & ROOM MANAGEMENT
         // ============================================
@@ -593,7 +598,6 @@
                 video.classList.add('screen-share');
             }
 
-            // Close button for expanded view
             let closeBtn = document.createElement('button');
             closeBtn.className = 'expand-close';
             closeBtn.innerHTML = '✕';
@@ -649,7 +653,6 @@
             div.appendChild(controls);
             div.appendChild(closeBtn);
             
-            // Click on video to expand
             video.onclick = (e) => {
                 e.stopPropagation();
                 document.querySelectorAll('.video-container.expanded').forEach(v => v.classList.remove('expanded'));
@@ -764,7 +767,14 @@
                 });
         }
 
+        // SCREEN SHARE WITH MOBILE DETECTION
         function startScreenShare() {
+            // Mobile device detection - prevents screen sharing on phones
+            if (isMobileDevice()) {
+                alert("Screen sharing is not supported on mobile devices. Please use a laptop or desktop computer.");
+                return;
+            }
+
             if (screenOn) {
                 stopScreenShare();
                 return;
@@ -775,12 +785,10 @@
                     screenStream = stream;
                     screenOn = true;
                     
-                    // Update button text
                     let shareBtn = document.getElementById('shareScreenBtn');
                     shareBtn.innerText = '⏹️ Stop Sharing';
                     shareBtn.style.background = '#d32f2f';
                     
-                    // Show local screen
                     let container = document.getElementById('participants');
                     let existing = document.getElementById('local-screen');
                     if (existing) existing.remove();
@@ -829,7 +837,6 @@
                     video.onclick = () => div.classList.toggle('expanded');
                     container.appendChild(div);
                     
-                    // Answer any pending screen calls
                     pendingCalls = pendingCalls.filter(p => {
                         if (p.type === 'screen') {
                             p.call.answer(stream);
@@ -839,7 +846,6 @@
                         return true;
                     });
                     
-                    // Call all existing peers with screen
                     Object.keys(connectedPeers).forEach(pid => {
                         let call = peer.call(pid, stream, { metadata: { type: 'screen' } });
                         handleCall(call, 'screen');
@@ -861,7 +867,6 @@
             }
             screenOn = false;
             
-            // Update button text
             let shareBtn = document.getElementById('shareScreenBtn');
             shareBtn.innerText = '🖥️ Share Screen';
             shareBtn.style.background = '';
@@ -869,7 +874,6 @@
             let el = document.getElementById('local-screen');
             if (el) el.remove();
             
-            // Close remote screen connections
             Object.keys(connectedPeers).forEach(pid => {
                 if (connectedPeers[pid] && connectedPeers[pid].type === 'screen') {
                     connectedPeers[pid].call.close();
@@ -879,39 +883,52 @@
         }
 
         // ============================================
-        // CHAT & HAND RAISE
+        // CHAT & HAND RAISE (FIXED - NO DUPLICATES)
         // ============================================
         function sendMessage() {
             let input = document.getElementById('chat-input');
             let text = input.value.trim();
             if (!text || !roomCode) return;
-            socket.emit('chat', { roomCode, username, message: text });
-            addMessage(username, text, role);
+            
+            // Send to server
+            socket.emit('chat', { roomCode, username, message: text, role });
+            
+            // Display on sender's screen immediately
+            displayMessage(username, text, role);
+            
             input.value = '';
         }
 
         socket.on('chat', (data) => {
-            let senderRole = data.username === username ? role : 'student';
-            addMessage(data.username, data.message, senderRole);
+            // Only display if it's not from the current user (prevents duplicates)
+            if (data.username !== username) {
+                displayMessage(data.username, data.message, data.role);
+            }
         });
 
-        function addMessage(sender, text, senderRole) {
+        function displayMessage(sender, text, senderRole) {
             let container = document.getElementById('messages');
             let msg = document.createElement('div');
             msg.className = `message ${senderRole}`;
-            msg.innerHTML = `<strong>${senderRole === 'teacher' ? '👩‍🏫 Teacher' : '👨‍🎓 Student'}:</strong> ${escapeHtml(text)}`;
+            
+            // Format display name: Teacher or Student (Name)
+            let displayName = senderRole === 'teacher' ? 'Teacher' : `Student (${escapeHtml(sender)})`;
+            
+            msg.innerHTML = `<strong>${displayName}:</strong> ${escapeHtml(text)}`;
             container.appendChild(msg);
             container.scrollTop = container.scrollHeight;
         }
 
         function raiseHand() {
             if (!roomCode) return;
-            socket.emit('raise-hand', { roomCode, username });
-            addMessage(username, 'raised hand ✋', role);
+            socket.emit('raise-hand', { roomCode, username, role });
+            displayMessage(username, 'raised hand ✋', role);
         }
 
         socket.on('hand-raised', (data) => {
-            addMessage(data.username, 'raised hand ✋', 'student');
+            if (data.username !== username) {
+                displayMessage(data.username, 'raised hand ✋', data.role);
+            }
             let alert = document.getElementById('hand-raise-alert');
             alert.innerText = `✋ ${data.username} raised their hand!`;
             alert.style.display = 'block';
@@ -937,7 +954,6 @@
             pendingCalls = [];
             roomCode = null;
             
-            // Reset share button
             let shareBtn = document.getElementById('shareScreenBtn');
             if (shareBtn) {
                 shareBtn.innerText = '🖥️ Share Screen';
