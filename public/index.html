@@ -85,6 +85,14 @@
             background: #e68900;
         }
 
+        button.success {
+            background: #4caf50;
+        }
+
+        button.success:hover {
+            background: #388e3c;
+        }
+
         /* Dashboard */
         .dashboard {
             padding: 20px;
@@ -157,7 +165,38 @@
             padding: 12px;
             width: 360px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .video-container.expanded {
+            position: fixed !important;
+            top: 50% !important;
+            left: 50% !important;
+            transform: translate(-50%, -50%) !important;
+            width: 90vw !important;
+            max-width: 1200px !important;
+            z-index: 10000 !important;
+            background: #000 !important;
+            box-shadow: 0 0 0 1000px rgba(0, 0, 0, 0.85) !important;
+        }
+
+        .video-container.expanded video {
+            width: 100% !important;
+            height: auto !important;
+            max-height: 80vh !important;
+        }
+
+        .video-container.expanded .video-controls {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 10px;
+            border-radius: 30px;
+            width: fit-content;
+            margin: 0 auto;
         }
 
         .video-container video {
@@ -166,6 +205,7 @@
             background: #000;
             aspect-ratio: 16/9;
             object-fit: cover;
+            pointer-events: none;
         }
 
         .video-container .label {
@@ -174,16 +214,39 @@
             text-align: center;
         }
 
-        .controls {
+        .video-controls {
             display: flex;
             justify-content: center;
             gap: 8px;
             margin-top: 8px;
+            pointer-events: auto;
         }
 
-        .controls button {
+        .video-controls button,
+        .video-controls input {
             padding: 5px 10px;
             font-size: 12px;
+            pointer-events: auto;
+        }
+
+        .expand-close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: red;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            font-size: 18px;
+            cursor: pointer;
+            display: none;
+            z-index: 10001;
+        }
+
+        .video-container.expanded .expand-close {
+            display: block;
         }
 
         /* Chat */
@@ -250,6 +313,10 @@
             margin: 10px;
             display: none;
         }
+
+        .screen-share {
+            border: 3px solid #ff9800 !important;
+        }
     </style>
 </head>
 <body>
@@ -307,10 +374,9 @@
 
         <div style="text-align: center; margin: 20px;">
             <button onclick="startCamera()">📷 Start My Camera</button>
-            <button onclick="startScreenShare()">🖥️ Share Screen</button>
-            <button onclick="stopScreenShare()">⏹️ Stop Sharing</button>
+            <button onclick="startScreenShare()" id="shareScreenBtn">🖥️ Share Screen</button>
             <button onclick="raiseHand()">✋ Raise Hand</button>
-            <button id="exitBtn" onclick="leaveRoom()">Leave Class</button>
+            <button id="exitBtn" class="danger">End Class</button>
         </div>
     </div>
 
@@ -370,6 +436,18 @@
 
             if (role === 'teacher') {
                 document.getElementById('teacher-panel').style.display = 'block';
+            }
+
+            // Update exit button based on role
+            let exitBtn = document.getElementById('exitBtn');
+            if (role === 'teacher') {
+                exitBtn.innerText = 'End Class';
+                exitBtn.className = 'danger';
+                exitBtn.onclick = endClass;
+            } else {
+                exitBtn.innerText = 'Leave Class';
+                exitBtn.className = 'warning';
+                exitBtn.onclick = leaveRoom;
             }
 
             // Request room list
@@ -433,7 +511,8 @@
                 config: {
                     iceServers: [
                         { urls: 'stun:stun.l.google.com:19302' },
-                        { urls: 'stun:stun1.l.google.com:19302' }
+                        { urls: 'stun:stun1.l.google.com:19302' },
+                        { urls: 'stun:stun2.l.google.com:19302' }
                     ]
                 }
             });
@@ -511,19 +590,29 @@
             video.playsInline = true;
             
             if (type === 'screen') {
-                video.style.border = '3px solid #ff9800';
+                video.classList.add('screen-share');
             }
+
+            // Close button for expanded view
+            let closeBtn = document.createElement('button');
+            closeBtn.className = 'expand-close';
+            closeBtn.innerHTML = '✕';
+            closeBtn.onclick = (e) => {
+                e.stopPropagation();
+                div.classList.remove('expanded');
+            };
 
             let label = document.createElement('div');
             label.className = 'label';
             label.innerText = type === 'screen' ? '📺 Screen Share' : `👤 ${peerId.substring(0, 8)}`;
 
             let controls = document.createElement('div');
-            controls.className = 'controls';
+            controls.className = 'video-controls';
             
             let muteBtn = document.createElement('button');
             muteBtn.innerText = '🔊 Mute';
-            muteBtn.onclick = () => {
+            muteBtn.onclick = (e) => {
+                e.stopPropagation();
                 let audio = stream.getAudioTracks()[0];
                 if (audio) {
                     audio.enabled = !audio.enabled;
@@ -538,14 +627,35 @@
             volSlider.step = 0.05;
             volSlider.value = 1;
             volSlider.style.width = '70px';
-            volSlider.oninput = () => { video.volume = volSlider.value; };
+            volSlider.oninput = (e) => { 
+                e.stopPropagation();
+                video.volume = parseFloat(e.target.value); 
+            };
+            
+            let expandBtn = document.createElement('button');
+            expandBtn.innerText = '🔍 Expand';
+            expandBtn.onclick = (e) => {
+                e.stopPropagation();
+                document.querySelectorAll('.video-container.expanded').forEach(v => v.classList.remove('expanded'));
+                div.classList.add('expanded');
+            };
             
             controls.appendChild(muteBtn);
             controls.appendChild(volSlider);
+            controls.appendChild(expandBtn);
             
             div.appendChild(video);
             div.appendChild(label);
             div.appendChild(controls);
+            div.appendChild(closeBtn);
+            
+            // Click on video to expand
+            video.onclick = (e) => {
+                e.stopPropagation();
+                document.querySelectorAll('.video-container.expanded').forEach(v => v.classList.remove('expanded'));
+                div.classList.add('expanded');
+            };
+            
             container.appendChild(div);
         }
 
@@ -583,12 +693,20 @@
                     video.muted = true;
                     video.playsInline = true;
                     
+                    let closeBtn = document.createElement('button');
+                    closeBtn.className = 'expand-close';
+                    closeBtn.innerHTML = '✕';
+                    closeBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        div.classList.remove('expanded');
+                    };
+                    
                     let label = document.createElement('div');
                     label.className = 'label';
                     label.innerText = `${username} (You)`;
                     
                     let controls = document.createElement('div');
-                    controls.className = 'controls';
+                    controls.className = 'video-controls';
                     
                     let muteBtn = document.createElement('button');
                     muteBtn.innerText = '🔊 Mute Mic';
@@ -606,13 +724,21 @@
                     volSlider.max = 1;
                     volSlider.step = 0.05;
                     volSlider.value = 1;
-                    volSlider.oninput = () => { video.volume = volSlider.value; };
+                    volSlider.oninput = (e) => { video.volume = parseFloat(e.target.value); };
+                    
+                    let expandBtn = document.createElement('button');
+                    expandBtn.innerText = '🔍 Expand';
+                    expandBtn.onclick = () => div.classList.toggle('expanded');
                     
                     controls.appendChild(muteBtn);
                     controls.appendChild(volSlider);
+                    controls.appendChild(expandBtn);
                     div.appendChild(video);
                     div.appendChild(label);
                     div.appendChild(controls);
+                    div.appendChild(closeBtn);
+                    
+                    video.onclick = () => div.classList.toggle('expanded');
                     container.appendChild(div);
                     
                     // Answer any pending camera calls
@@ -640,7 +766,7 @@
 
         function startScreenShare() {
             if (screenOn) {
-                alert('Screen share already active');
+                stopScreenShare();
                 return;
             }
 
@@ -648,6 +774,11 @@
                 .then(stream => {
                     screenStream = stream;
                     screenOn = true;
+                    
+                    // Update button text
+                    let shareBtn = document.getElementById('shareScreenBtn');
+                    shareBtn.innerText = '⏹️ Stop Sharing';
+                    shareBtn.style.background = '#d32f2f';
                     
                     // Show local screen
                     let container = document.getElementById('participants');
@@ -662,23 +793,40 @@
                     video.srcObject = stream;
                     video.autoplay = true;
                     video.playsInline = true;
-                    video.style.border = '3px solid #ff9800';
+                    video.classList.add('screen-share');
+                    
+                    let closeBtn = document.createElement('button');
+                    closeBtn.className = 'expand-close';
+                    closeBtn.innerHTML = '✕';
+                    closeBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        div.classList.remove('expanded');
+                    };
                     
                     let label = document.createElement('div');
                     label.className = 'label';
                     label.innerText = `${username} (Screen - You)`;
                     
                     let controls = document.createElement('div');
-                    controls.className = 'controls';
+                    controls.className = 'video-controls';
                     
                     let stopBtn = document.createElement('button');
                     stopBtn.innerText = '⏹️ Stop';
+                    stopBtn.style.background = '#d32f2f';
                     stopBtn.onclick = () => stopScreenShare();
-                    controls.appendChild(stopBtn);
                     
+                    let expandBtn = document.createElement('button');
+                    expandBtn.innerText = '🔍 Expand';
+                    expandBtn.onclick = () => div.classList.toggle('expanded');
+                    
+                    controls.appendChild(stopBtn);
+                    controls.appendChild(expandBtn);
                     div.appendChild(video);
                     div.appendChild(label);
                     div.appendChild(controls);
+                    div.appendChild(closeBtn);
+                    
+                    video.onclick = () => div.classList.toggle('expanded');
                     container.appendChild(div);
                     
                     // Answer any pending screen calls
@@ -702,6 +850,7 @@
                 .catch(err => {
                     console.error('Screen share error:', err);
                     showError('Screen share failed: ' + err.message);
+                    screenOn = false;
                 });
         }
 
@@ -711,12 +860,18 @@
                 screenStream = null;
             }
             screenOn = false;
+            
+            // Update button text
+            let shareBtn = document.getElementById('shareScreenBtn');
+            shareBtn.innerText = '🖥️ Share Screen';
+            shareBtn.style.background = '';
+            
             let el = document.getElementById('local-screen');
             if (el) el.remove();
             
             // Close remote screen connections
             Object.keys(connectedPeers).forEach(pid => {
-                if (connectedPeers[pid].type === 'screen') {
+                if (connectedPeers[pid] && connectedPeers[pid].type === 'screen') {
                     connectedPeers[pid].call.close();
                     delete connectedPeers[pid];
                 }
@@ -782,31 +937,23 @@
             pendingCalls = [];
             roomCode = null;
             
+            // Reset share button
+            let shareBtn = document.getElementById('shareScreenBtn');
+            if (shareBtn) {
+                shareBtn.innerText = '🖥️ Share Screen';
+                shareBtn.style.background = '';
+            }
+            
             if (role === 'teacher') {
                 socket.emit('get-rooms');
             }
         }
 
-        function exitRoom() {
-            if (role === 'teacher') {
-                socket.emit('end-class', { roomCode });
-            }
+        function endClass() {
+            if (role !== 'teacher') return;
+            socket.emit('end-class', { roomCode });
             leaveRoom();
         }
-        
-        // Update exit button based on role
-        setTimeout(() => {
-            let btn = document.getElementById('exitBtn');
-            if (role === 'teacher') {
-                btn.innerText = 'End Class';
-                btn.className = 'danger';
-                btn.onclick = exitRoom;
-            } else {
-                btn.innerText = 'Leave Class';
-                btn.className = 'warning';
-                btn.onclick = leaveRoom;
-            }
-        }, 500);
     </script>
 </body>
 </html>
