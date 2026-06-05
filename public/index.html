@@ -782,19 +782,27 @@
             });
         }
 
-        // ========== FIXED CHAT - TEACHER SHOWS AS "Teacher" ==========
+        // ========== FIXED CHAT - Teacher shows as "Teacher" on both sides ==========
         function sendMessage() {
             let input = document.getElementById('chat-input');
             let text = input.value.trim();
             if (!text || !roomCode) return;
             
-            // IMPORTANT: Send role correctly
-            socket.emit('chat', { roomCode, username, message: text, role: role });
+            console.log('Sending message - role:', role, 'username:', username);
+            // IMPORTANT: Send the role explicitly
+            socket.emit('chat', { 
+                roomCode, 
+                username: username, 
+                message: text, 
+                role: role  // Send role separately
+            });
             addMessage(username, text, role);
             input.value = '';
         }
 
         socket.on('chat', (data) => {
+            console.log('Received chat - role:', data.role, 'username:', data.username);
+            // Don't duplicate own messages
             if (data.username !== username) {
                 addMessage(data.username, data.message, data.role);
             }
@@ -805,7 +813,7 @@
             let msg = document.createElement('div');
             msg.className = `message ${senderRole}`;
             
-            // FIXED: Teacher shows as "Teacher", Student shows as "Student (name)"
+            // FIXED: Teacher shows as "Teacher", Student shows as "Student (Name)"
             let displayName;
             if (senderRole === 'teacher') {
                 displayName = 'Teacher';
@@ -816,6 +824,7 @@
             msg.innerHTML = `<strong>${displayName}:</strong> ${escapeHtml(text)}`;
             container.appendChild(msg);
             container.scrollTop = container.scrollHeight;
+            console.log('Added message - displayName:', displayName);
         }
 
         function raiseHand() {
