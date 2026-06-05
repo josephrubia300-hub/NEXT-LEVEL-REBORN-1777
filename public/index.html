@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=yes">
     <title>Next Level Academy - Live Video Classroom</title>
     <style>
         * {
@@ -85,14 +85,6 @@
             background: #e68900;
         }
 
-        button.success {
-            background: #4caf50;
-        }
-
-        button.success:hover {
-            background: #388e3c;
-        }
-
         /* Dashboard */
         .dashboard {
             padding: 20px;
@@ -169,34 +161,46 @@
             cursor: pointer;
         }
 
+        /* Fullscreen expanded mode for mobile */
         .video-container.expanded {
             position: fixed !important;
-            top: 50% !important;
-            left: 50% !important;
-            transform: translate(-50%, -50%) !important;
-            width: 90vw !important;
-            max-width: 1200px !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            max-width: none !important;
+            border-radius: 0 !important;
             z-index: 10000 !important;
             background: #000 !important;
-            box-shadow: 0 0 0 1000px rgba(0, 0, 0, 0.85) !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: center !important;
+            align-items: center !important;
+            transform: none !important;
         }
 
         .video-container.expanded video {
             width: 100% !important;
             height: auto !important;
-            max-height: 80vh !important;
+            max-height: 90vh !important;
+            object-fit: contain !important;
         }
 
         .video-container.expanded .video-controls {
-            position: absolute;
+            position: fixed;
             bottom: 20px;
             left: 0;
             right: 0;
-            background: rgba(0, 0, 0, 0.6);
+            background: rgba(0, 0, 0, 0.7);
             padding: 10px;
             border-radius: 30px;
             width: fit-content;
             margin: 0 auto;
+            z-index: 10001;
         }
 
         .video-container video {
@@ -237,12 +241,13 @@
             color: white;
             border: none;
             border-radius: 50%;
-            width: 35px;
-            height: 35px;
-            font-size: 18px;
+            width: 40px;
+            height: 40px;
+            font-size: 20px;
             cursor: pointer;
             display: none;
             z-index: 10001;
+            pointer-events: auto;
         }
 
         .video-container.expanded .expand-close {
@@ -316,6 +321,15 @@
 
         .screen-share {
             border: 3px solid #ff9800 !important;
+        }
+
+        /* Mobile orientation support */
+        @media (orientation: landscape) {
+            .video-container.expanded video {
+                width: auto !important;
+                height: 90vh !important;
+                max-width: 100vw !important;
+            }
         }
     </style>
 </head>
@@ -391,11 +405,10 @@
         let username = "", role = "", roomCode = null;
         let localStream = null, screenStream = null;
         let peer = null, myPeerId = null;
-        let connectedPeers = {};  // peerId -> { call, type, name }
+        let connectedPeers = {};
         let cameraOn = false, screenOn = false;
         let pendingCalls = [];
 
-        // Helper: Show error message
         function showError(msg) {
             let errDiv = document.getElementById('error-msg');
             if (errDiv) {
@@ -406,7 +419,6 @@
             console.error(msg);
         }
 
-        // Helper: Escape HTML
         function escapeHtml(str) {
             if (!str) return '';
             return str.replace(/[&<>]/g, function(m) {
@@ -417,9 +429,27 @@
             });
         }
 
-        // Helper: Check if mobile device
         function isMobileDevice() {
             return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+        }
+
+        // Request fullscreen on mobile for expanded view
+        function requestFullscreen(element) {
+            if (element.requestFullscreen) {
+                element.requestFullscreen();
+            } else if (element.webkitRequestFullscreen) {
+                element.webkitRequestFullscreen();
+            } else if (element.msRequestFullscreen) {
+                element.msRequestFullscreen();
+            }
+        }
+
+        function exitFullscreen() {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            } else if (document.webkitExitFullscreen) {
+                document.webkitExitFullscreen();
+            }
         }
 
         // ============================================
@@ -443,7 +473,6 @@
                 document.getElementById('teacher-panel').style.display = 'block';
             }
 
-            // Update exit button based on role
             let exitBtn = document.getElementById('exitBtn');
             if (role === 'teacher') {
                 exitBtn.innerText = 'End Class';
@@ -455,7 +484,6 @@
                 exitBtn.onclick = leaveRoom;
             }
 
-            // Request room list
             socket.emit('get-rooms');
         }
 
@@ -539,7 +567,6 @@
                     call.answer(localStream);
                     handleCall(call, 'camera');
                 } else {
-                    console.log('Stream not ready, saving call');
                     pendingCalls.push({ call, type });
                 }
             });
@@ -553,13 +580,11 @@
         socket.on('new-peer', ({ peerId }) => {
             console.log('New peer joined:', peerId);
             
-            // Send camera if available
             if (localStream) {
                 let call = peer.call(peerId, localStream);
                 handleCall(call, 'camera');
             }
             
-            // Send screen if available
             if (screenStream) {
                 let screenCall = peer.call(peerId, screenStream, { metadata: { type: 'screen' } });
                 handleCall(screenCall, 'screen');
@@ -604,6 +629,7 @@
             closeBtn.onclick = (e) => {
                 e.stopPropagation();
                 div.classList.remove('expanded');
+                exitFullscreen();
             };
 
             let label = document.createElement('div');
@@ -642,6 +668,9 @@
                 e.stopPropagation();
                 document.querySelectorAll('.video-container.expanded').forEach(v => v.classList.remove('expanded'));
                 div.classList.add('expanded');
+                if (isMobileDevice()) {
+                    requestFullscreen(div);
+                }
             };
             
             controls.appendChild(muteBtn);
@@ -657,6 +686,9 @@
                 e.stopPropagation();
                 document.querySelectorAll('.video-container.expanded').forEach(v => v.classList.remove('expanded'));
                 div.classList.add('expanded');
+                if (isMobileDevice()) {
+                    requestFullscreen(div);
+                }
             };
             
             container.appendChild(div);
@@ -681,7 +713,6 @@
                     localStream = stream;
                     cameraOn = true;
                     
-                    // Show local video
                     let container = document.getElementById('participants');
                     let existing = document.getElementById('local-video');
                     if (existing) existing.remove();
@@ -702,6 +733,7 @@
                     closeBtn.onclick = (e) => {
                         e.stopPropagation();
                         div.classList.remove('expanded');
+                        exitFullscreen();
                     };
                     
                     let label = document.createElement('div');
@@ -731,7 +763,14 @@
                     
                     let expandBtn = document.createElement('button');
                     expandBtn.innerText = '🔍 Expand';
-                    expandBtn.onclick = () => div.classList.toggle('expanded');
+                    expandBtn.onclick = () => {
+                        div.classList.toggle('expanded');
+                        if (isMobileDevice() && div.classList.contains('expanded')) {
+                            requestFullscreen(div);
+                        } else if (!div.classList.contains('expanded')) {
+                            exitFullscreen();
+                        }
+                    };
                     
                     controls.appendChild(muteBtn);
                     controls.appendChild(volSlider);
@@ -741,10 +780,16 @@
                     div.appendChild(controls);
                     div.appendChild(closeBtn);
                     
-                    video.onclick = () => div.classList.toggle('expanded');
+                    video.onclick = () => {
+                        div.classList.toggle('expanded');
+                        if (isMobileDevice() && div.classList.contains('expanded')) {
+                            requestFullscreen(div);
+                        } else if (!div.classList.contains('expanded')) {
+                            exitFullscreen();
+                        }
+                    };
                     container.appendChild(div);
                     
-                    // Answer any pending camera calls
                     pendingCalls = pendingCalls.filter(p => {
                         if (p.type === 'camera') {
                             p.call.answer(stream);
@@ -754,7 +799,6 @@
                         return true;
                     });
                     
-                    // Call all existing peers with camera
                     Object.keys(connectedPeers).forEach(pid => {
                         if (connectedPeers[pid].type === 'camera') return;
                         let call = peer.call(pid, stream);
@@ -767,9 +811,7 @@
                 });
         }
 
-        // SCREEN SHARE WITH MOBILE DETECTION
         function startScreenShare() {
-            // Mobile device detection - prevents screen sharing on phones
             if (isMobileDevice()) {
                 alert("Screen sharing is not supported on mobile devices. Please use a laptop or desktop computer.");
                 return;
@@ -809,6 +851,7 @@
                     closeBtn.onclick = (e) => {
                         e.stopPropagation();
                         div.classList.remove('expanded');
+                        exitFullscreen();
                     };
                     
                     let label = document.createElement('div');
@@ -825,7 +868,14 @@
                     
                     let expandBtn = document.createElement('button');
                     expandBtn.innerText = '🔍 Expand';
-                    expandBtn.onclick = () => div.classList.toggle('expanded');
+                    expandBtn.onclick = () => {
+                        div.classList.toggle('expanded');
+                        if (isMobileDevice() && div.classList.contains('expanded')) {
+                            requestFullscreen(div);
+                        } else if (!div.classList.contains('expanded')) {
+                            exitFullscreen();
+                        }
+                    };
                     
                     controls.appendChild(stopBtn);
                     controls.appendChild(expandBtn);
@@ -834,7 +884,14 @@
                     div.appendChild(controls);
                     div.appendChild(closeBtn);
                     
-                    video.onclick = () => div.classList.toggle('expanded');
+                    video.onclick = () => {
+                        div.classList.toggle('expanded');
+                        if (isMobileDevice() && div.classList.contains('expanded')) {
+                            requestFullscreen(div);
+                        } else if (!div.classList.contains('expanded')) {
+                            exitFullscreen();
+                        }
+                    };
                     container.appendChild(div);
                     
                     pendingCalls = pendingCalls.filter(p => {
@@ -883,24 +940,20 @@
         }
 
         // ============================================
-        // CHAT & HAND RAISE (FIXED - NO DUPLICATES)
+        // CHAT & HAND RAISE (FIXED - TEACHER/STUDENT)
         // ============================================
         function sendMessage() {
             let input = document.getElementById('chat-input');
             let text = input.value.trim();
             if (!text || !roomCode) return;
             
-            // Send to server
             socket.emit('chat', { roomCode, username, message: text, role });
-            
-            // Display on sender's screen immediately
             displayMessage(username, text, role);
             
             input.value = '';
         }
 
         socket.on('chat', (data) => {
-            // Only display if it's not from the current user (prevents duplicates)
             if (data.username !== username) {
                 displayMessage(data.username, data.message, data.role);
             }
@@ -911,8 +964,13 @@
             let msg = document.createElement('div');
             msg.className = `message ${senderRole}`;
             
-            // Format display name: Teacher or Student (Name)
-            let displayName = senderRole === 'teacher' ? 'Teacher' : `Student (${escapeHtml(sender)})`;
+            // Fixed: Teacher shows as "Teacher", Student shows as "Student (Name)"
+            let displayName;
+            if (senderRole === 'teacher') {
+                displayName = 'Teacher';
+            } else {
+                displayName = `Student (${escapeHtml(sender)})`;
+            }
             
             msg.innerHTML = `<strong>${displayName}:</strong> ${escapeHtml(text)}`;
             container.appendChild(msg);
@@ -953,6 +1011,7 @@
             connectedPeers = {};
             pendingCalls = [];
             roomCode = null;
+            exitFullscreen();
             
             let shareBtn = document.getElementById('shareScreenBtn');
             if (shareBtn) {
