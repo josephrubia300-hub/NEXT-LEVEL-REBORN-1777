@@ -357,11 +357,24 @@
                 myPeerId = id;
                 console.log('My Peer ID:', id);
                 socket.emit('share-peer-id', { roomCode, peerId: id });
+                
+                // After PeerJS is open, call any pending calls
+                pendingCalls.forEach(p => {
+                    if (p.type === 'camera' && localStream) {
+                        p.call.answer(localStream);
+                        handleCall(p.call, 'camera');
+                    } else if (p.type === 'screen' && screenStream) {
+                        p.call.answer(screenStream);
+                        handleCall(p.call, 'screen');
+                    }
+                });
+                pendingCalls = [];
             });
 
             peer.on('call', (call) => {
                 console.log('Incoming call from', call.peer);
                 let type = call.metadata?.type || 'camera';
+                
                 if (type === 'screen' && screenStream) {
                     call.answer(screenStream);
                     handleCall(call, 'screen');
@@ -377,15 +390,17 @@
         }
 
         socket.on('new-peer', ({ peerId }) => {
-            console.log('New peer:', peerId);
-            if (localStream) {
-                let call = peer.call(peerId, localStream);
-                handleCall(call, 'camera');
-            }
-            if (screenStream) {
-                let call = peer.call(peerId, screenStream, { metadata: { type: 'screen' } });
-                handleCall(call, 'screen');
-            }
+            console.log('New peer joined:', peerId);
+            setTimeout(() => {
+                if (localStream) {
+                    let call = peer.call(peerId, localStream);
+                    handleCall(call, 'camera');
+                }
+                if (screenStream) {
+                    let call = peer.call(peerId, screenStream, { metadata: { type: 'screen' } });
+                    handleCall(call, 'screen');
+                }
+            }, 1000);
         });
 
         function handleCall(call, type) {
@@ -414,7 +429,7 @@
 
             let label = document.createElement('div');
             label.className = 'label';
-            label.innerText = type === 'screen' ? '📺 Screen Share' : `Participant`;
+            label.innerText = type === 'screen' ? '📺 Screen Share' : 'Participant';
 
             let controls = document.createElement('div');
             controls.className = 'video-controls';
@@ -507,20 +522,21 @@
                     div.appendChild(controls);
                     container.appendChild(div);
                     
-                    // Answer pending calls
-                    pendingCalls.forEach(p => {
-                        if (p.type === 'camera') {
-                            p.call.answer(stream);
-                            handleCall(p.call, 'camera');
-                        }
-                    });
-                    pendingCalls = [];
-                    
-                    // Call all peers
+                    // Call all existing peers
                     Object.keys(connectedPeers).forEach(pid => {
                         let call = peer.call(pid, stream);
                         handleCall(call, 'camera');
                     });
+                    
+                    // Answer any pending camera calls
+                    for (let i = 0; i < pendingCalls.length; i++) {
+                        if (pendingCalls[i].type === 'camera') {
+                            pendingCalls[i].call.answer(stream);
+                            handleCall(pendingCalls[i].call, 'camera');
+                            pendingCalls.splice(i, 1);
+                            i--;
+                        }
+                    }
                 })
                 .catch(err => showError('Camera error: ' + err.message));
         }
@@ -578,19 +594,21 @@
                     div.appendChild(controls);
                     container.appendChild(div);
                     
-                    // Answer pending screen calls
-                    pendingCalls.forEach(p => {
-                        if (p.type === 'screen') {
-                            p.call.answer(stream);
-                            handleCall(p.call, 'screen');
-                        }
-                    });
-                    
-                    // Call all peers
+                    // Call all existing peers with screen
                     Object.keys(connectedPeers).forEach(pid => {
                         let call = peer.call(pid, stream, { metadata: { type: 'screen' } });
                         handleCall(call, 'screen');
                     });
+                    
+                    // Answer any pending screen calls
+                    for (let i = 0; i < pendingCalls.length; i++) {
+                        if (pendingCalls[i].type === 'screen') {
+                            pendingCalls[i].call.answer(stream);
+                            handleCall(pendingCalls[i].call, 'screen');
+                            pendingCalls.splice(i, 1);
+                            i--;
+                        }
+                    }
                     
                     stream.getVideoTracks()[0].onended = () => stopScreenShare();
                 })
@@ -612,23 +630,27 @@
             if (el) el.remove();
             
             Object.keys(connectedPeers).forEach(pid => {
-                if (connectedPeers[pid]?.type === 'screen') {
+                if (connectedPeers[pid] && connectedPeers[pid].type === 'screen') {
                     connectedPeers[pid].call.close();
                     delete connectedPeers[pid];
                 }
             });
         }
 
+        // ========== FIXED CHAT - TEACHER SHOWS AS "Teacher" ==========
         function sendMessage() {
             let input = document.getElementById('chat-input');
             let text = input.value.trim();
             if (!text || !roomCode) return;
+            
+            console.log('Sending message - role:', role, 'username:', username);
             socket.emit('chat', { roomCode, username, message: text, role });
             addMessage(username, text, role);
             input.value = '';
         }
 
         socket.on('chat', (data) => {
+            console.log('Received chat - role:', data.role, 'username:', data.username);
             if (data.username !== username) {
                 addMessage(data.username, data.message, data.role);
             }
@@ -638,7 +660,15 @@
             let container = document.getElementById('messages');
             let msg = document.createElement('div');
             msg.className = `message ${senderRole}`;
-            let displayName = senderRole === 'teacher' ? 'Teacher' : `Student (${escapeHtml(sender)})`;
+            
+            // FIXED: Teacher shows as "Teacher", Student shows as "Student (name)"
+            let displayName;
+            if (senderRole === 'teacher') {
+                displayName = 'Teacher';
+            } else {
+                displayName = `Student (${escapeHtml(sender)})`;
+            }
+            
             msg.innerHTML = `<strong>${displayName}:</strong> ${escapeHtml(text)}`;
             container.appendChild(msg);
             container.scrollTop = container.scrollHeight;
