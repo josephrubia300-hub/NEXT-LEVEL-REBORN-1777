@@ -140,7 +140,6 @@
         }
         .video-controls input { width: 70px; }
 
-        /* FULLSCREEN EXPANDED MODE */
         .video-container.expanded {
             position: fixed !important;
             top: 0 !important;
@@ -314,7 +313,7 @@
         let peerUserInfo = {};
         let cameraOn = false, screenOn = false;
         let pendingCalls = [];
-        let sentMessages = new Set(); // Track sent messages to prevent duplicates
+        let processedMessages = new Set();
 
         function showError(msg) {
             let errDiv = document.getElementById('error-msg');
@@ -440,10 +439,16 @@
 
         socket.on('user-left', (data) => {
             addSystemMessage(`👋 ${escapeHtml(data.username)} (${data.role === 'teacher' ? 'Teacher' : 'Student'}) left the class`);
-            // Remove video when user leaves
             if (data.peerId) {
                 removeAllVideosForPeer(data.peerId);
             }
+        });
+
+        socket.on('room-closed', () => {
+            addSystemMessage(`🔚 Class has ended`);
+            setTimeout(() => {
+                leaveRoom();
+            }, 2000);
         });
 
         function removeAllVideosForPeer(peerId) {
@@ -828,140 +833,4 @@
                     
                     stream.getVideoTracks()[0].onended = () => stopScreenShare();
                 })
-                .catch(err => showError('Screen share failed: ' + err.message));
-        }
-
-        function stopScreenShare() {
-            if (screenStream) {
-                screenStream.getTracks().forEach(t => t.stop());
-                screenStream = null;
-            }
-            screenOn = false;
-            
-            let shareBtn = document.getElementById('shareScreenBtn');
-            shareBtn.innerText = '🖥️ Share Screen';
-            shareBtn.style.background = '';
-            
-            let el = document.getElementById('local-screen');
-            if (el) el.remove();
-            
-            Object.keys(connectedPeers).forEach(pid => {
-                if (connectedPeers[pid] && connectedPeers[pid].type === 'screen') {
-                    connectedPeers[pid].call.close();
-                    delete connectedPeers[pid];
-                }
-            });
-        }
-
-        // ========== CHAT - FIXED (No duplicates, Teacher shows correctly) ==========
-        function sendMessage() {
-            let input = document.getElementById('chat-input');
-            let text = input.value.trim();
-            if (!text || !roomCode) return;
-            
-            let messageId = Date.now() + '-' + Math.random();
-            
-            socket.emit('chat', { 
-                roomCode, 
-                username: username, 
-                message: text, 
-                role: role,
-                messageId: messageId
-            });
-            
-            // Display on sender's screen immediately
-            addChatMessage(username, text, role, messageId);
-            input.value = '';
-        }
-
-        socket.on('chat', (data) => {
-            // Check if we already displayed this message (prevent duplicates)
-            if (data.messageId && sentMessages.has(data.messageId)) return;
-            if (data.messageId) sentMessages.add(data.messageId);
-            
-            // For messages from others, display them
-            addChatMessage(data.username, data.message, data.role, data.messageId);
-        });
-
-        function addChatMessage(sender, text, senderRole, messageId) {
-            let container = document.getElementById('messages');
-            let msg = document.createElement('div');
-            msg.className = `message ${senderRole}`;
-            
-            let displayName;
-            if (senderRole === 'teacher') {
-                displayName = 'Teacher';
-            } else {
-                displayName = `Student (${escapeHtml(sender)})`;
-            }
-            
-            msg.innerHTML = `<strong>${displayName}:</strong> ${escapeHtml(text)}`;
-            container.appendChild(msg);
-            container.scrollTop = container.scrollHeight;
-            
-            // Clean up message ID after 5 seconds
-            if (messageId) {
-                setTimeout(() => sentMessages.delete(messageId), 5000);
-            }
-        }
-
-        function raiseHand() {
-            if (!roomCode) return;
-            let messageId = Date.now() + '-' + Math.random();
-            socket.emit('raise-hand', { roomCode, username, role: role, messageId: messageId });
-            addChatMessage(username, 'raised hand ✋', role, messageId);
-        }
-
-        socket.on('hand-raised', (data) => {
-            if (data.messageId && sentMessages.has(data.messageId)) return;
-            if (data.messageId) sentMessages.add(data.messageId);
-            addChatMessage(data.username, 'raised hand ✋', data.role, data.messageId);
-            
-            let alert = document.getElementById('hand-raise-alert');
-            alert.innerText = `✋ ${escapeHtml(data.username)} raised their hand!`;
-            alert.style.display = 'block';
-            setTimeout(() => alert.style.display = 'none', 5000);
-        });
-
-        function leaveRoom() {
-            if (localStream) localStream.getTracks().forEach(t => t.stop());
-            if (screenStream) screenStream.getTracks().forEach(t => t.stop());
-            if (peer) peer.destroy();
-            
-            // Notify server about leaving with peerId
-            socket.emit('leave-room', { roomCode, username, role, peerId: myPeerId });
-            addSystemMessage(`👋 ${escapeHtml(username)} (${role === 'teacher' ? 'Teacher' : 'Student'}) left the class`);
-            
-            document.getElementById('participants').innerHTML = '';
-            document.getElementById('messages').innerHTML = '';
-            document.getElementById('classroom').style.display = 'none';
-            document.getElementById('platform').style.display = 'block';
-            
-            cameraOn = false;
-            screenOn = false;
-            connectedPeers = {};
-            peerUserInfo = {};
-            roomCode = null;
-            sentMessages.clear();
-            
-            let shareBtn = document.getElementById('shareScreenBtn');
-            if (shareBtn) {
-                shareBtn.innerText = '🖥️ Share Screen';
-                shareBtn.style.background = '';
-            }
-            if (isMobile()) exitFullscreen();
-            
-            if (role === 'teacher') {
-                socket.emit('get-rooms');
-            }
-        }
-
-        function endClass() {
-            if (role !== 'teacher') return;
-            socket.emit('end-class', { roomCode });
-            addSystemMessage(`🔚 Class ended by Teacher`);
-            leaveRoom();
-        }
-    </script>
-</body>
-</html>
+                .catch(err => showError('Screen share
