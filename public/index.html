@@ -314,6 +314,7 @@
         let peerUserInfo = {};
         let cameraOn = false, screenOn = false;
         let pendingCalls = [];
+        let sentMessages = new Set(); // Track sent messages to prevent duplicates
 
         function showError(msg) {
             let errDiv = document.getElementById('error-msg');
@@ -446,13 +447,10 @@
         });
 
         function removeAllVideosForPeer(peerId) {
-            // Remove camera video
             let cameraEl = document.getElementById(`video-${peerId}-camera`);
             if (cameraEl) cameraEl.remove();
-            // Remove screen share video
             let screenEl = document.getElementById(`video-${peerId}-screen`);
             if (screenEl) screenEl.remove();
-            // Clean up peer data
             delete connectedPeers[peerId];
             delete peerUserInfo[peerId];
         }
@@ -509,7 +507,6 @@
 
         socket.on('new-peer', ({ peerId }) => {
             console.log('New peer joined:', peerId);
-            // Send my info to the new peer
             const conn = peer.connect(peerId);
             conn.on('open', () => {
                 conn.send({ type: 'info', username, role });
@@ -856,28 +853,37 @@
             });
         }
 
-        // ========== CHAT - Teacher shows as "Teacher" on both sides ==========
+        // ========== CHAT - FIXED (No duplicates, Teacher shows correctly) ==========
         function sendMessage() {
             let input = document.getElementById('chat-input');
             let text = input.value.trim();
             if (!text || !roomCode) return;
             
+            let messageId = Date.now() + '-' + Math.random();
+            
             socket.emit('chat', { 
                 roomCode, 
                 username: username, 
                 message: text, 
-                role: role
+                role: role,
+                messageId: messageId
             });
-            addChatMessage(username, text, role);
+            
+            // Display on sender's screen immediately
+            addChatMessage(username, text, role, messageId);
             input.value = '';
         }
 
         socket.on('chat', (data) => {
-            // Always display message with the role sent from the sender
-            addChatMessage(data.username, data.message, data.role);
+            // Check if we already displayed this message (prevent duplicates)
+            if (data.messageId && sentMessages.has(data.messageId)) return;
+            if (data.messageId) sentMessages.add(data.messageId);
+            
+            // For messages from others, display them
+            addChatMessage(data.username, data.message, data.role, data.messageId);
         });
 
-        function addChatMessage(sender, text, senderRole) {
+        function addChatMessage(sender, text, senderRole, messageId) {
             let container = document.getElementById('messages');
             let msg = document.createElement('div');
             msg.className = `message ${senderRole}`;
@@ -892,16 +898,25 @@
             msg.innerHTML = `<strong>${displayName}:</strong> ${escapeHtml(text)}`;
             container.appendChild(msg);
             container.scrollTop = container.scrollHeight;
+            
+            // Clean up message ID after 5 seconds
+            if (messageId) {
+                setTimeout(() => sentMessages.delete(messageId), 5000);
+            }
         }
 
         function raiseHand() {
             if (!roomCode) return;
-            socket.emit('raise-hand', { roomCode, username, role: role });
-            addChatMessage(username, 'raised hand ✋', role);
+            let messageId = Date.now() + '-' + Math.random();
+            socket.emit('raise-hand', { roomCode, username, role: role, messageId: messageId });
+            addChatMessage(username, 'raised hand ✋', role, messageId);
         }
 
         socket.on('hand-raised', (data) => {
-            addChatMessage(data.username, 'raised hand ✋', data.role);
+            if (data.messageId && sentMessages.has(data.messageId)) return;
+            if (data.messageId) sentMessages.add(data.messageId);
+            addChatMessage(data.username, 'raised hand ✋', data.role, data.messageId);
+            
             let alert = document.getElementById('hand-raise-alert');
             alert.innerText = `✋ ${escapeHtml(data.username)} raised their hand!`;
             alert.style.display = 'block';
@@ -913,8 +928,8 @@
             if (screenStream) screenStream.getTracks().forEach(t => t.stop());
             if (peer) peer.destroy();
             
-            // Notify server about leaving
-            socket.emit('leave-room', { roomCode, username, role });
+            // Notify server about leaving with peerId
+            socket.emit('leave-room', { roomCode, username, role, peerId: myPeerId });
             addSystemMessage(`👋 ${escapeHtml(username)} (${role === 'teacher' ? 'Teacher' : 'Student'}) left the class`);
             
             document.getElementById('participants').innerHTML = '';
@@ -927,6 +942,7 @@
             connectedPeers = {};
             peerUserInfo = {};
             roomCode = null;
+            sentMessages.clear();
             
             let shareBtn = document.getElementById('shareScreenBtn');
             if (shareBtn) {
