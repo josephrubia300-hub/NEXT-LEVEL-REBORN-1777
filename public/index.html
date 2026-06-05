@@ -213,6 +213,7 @@
         }
         .message.teacher { background: #fff3e0; }
         .message.student { background: #e3f2fd; }
+        .message.system { background: #e8e8e8; font-style: italic; text-align: center; }
         #chat-input-area {
             display: flex;
             border-top: 1px solid #ddd;
@@ -310,7 +311,7 @@
         let localStream = null, screenStream = null;
         let peer = null, myPeerId = null;
         let connectedPeers = {};
-        let peerUserInfo = {};  // Store peer username and role
+        let peerUserInfo = {};
         let cameraOn = false, screenOn = false;
         let pendingCalls = [];
 
@@ -347,6 +348,15 @@
         function exitFullscreen() {
             if (document.exitFullscreen) document.exitFullscreen();
             else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+        }
+
+        function addSystemMessage(text) {
+            let container = document.getElementById('messages');
+            let msg = document.createElement('div');
+            msg.className = 'message system';
+            msg.innerHTML = `<em>${escapeHtml(text)}</em>`;
+            container.appendChild(msg);
+            container.scrollTop = container.scrollHeight;
         }
 
         function login() {
@@ -404,6 +414,7 @@
             document.getElementById('room-title').innerHTML = escapeHtml(data.lessonTitle);
             document.getElementById('platform').style.display = 'none';
             document.getElementById('classroom').style.display = 'block';
+            addSystemMessage(`🎉 ${username} (Teacher) created this class`);
             initPeer();
         });
 
@@ -416,7 +427,18 @@
             document.getElementById('room-title').innerHTML = escapeHtml(data.lessonTitle);
             document.getElementById('platform').style.display = 'none';
             document.getElementById('classroom').style.display = 'block';
+            addSystemMessage(`👋 ${username} (Student) joined the class`);
             initPeer();
+        });
+
+        socket.on('user-joined', (data) => {
+            if (data.username !== username) {
+                addSystemMessage(`👋 ${data.username} (${data.role}) joined the class`);
+            }
+        });
+
+        socket.on('user-left', (data) => {
+            addSystemMessage(`👋 A participant left the class`);
         });
 
         function initPeer() {
@@ -438,6 +460,14 @@
                 myPeerId = id;
                 console.log('My Peer ID:', id);
                 socket.emit('share-peer-id', { roomCode, peerId: id });
+                
+                // Send my info to all peers via data connection
+                Object.keys(connectedPeers).forEach(pid => {
+                    const conn = peer.connect(pid);
+                    conn.on('open', () => {
+                        conn.send({ type: 'info', username, role });
+                    });
+                });
                 
                 pendingCalls.forEach(p => {
                     if (p.type === 'camera' && localStream) {
@@ -471,7 +501,7 @@
 
         socket.on('new-peer', ({ peerId }) => {
             console.log('New peer joined:', peerId);
-            // Request user info from the new peer via data connection
+            // Send my info to the new peer
             const conn = peer.connect(peerId);
             conn.on('open', () => {
                 conn.send({ type: 'info', username, role });
@@ -479,7 +509,6 @@
             conn.on('data', (data) => {
                 if (data.type === 'info') {
                     peerUserInfo[peerId] = { username: data.username, role: data.role };
-                    // Update video label for this peer
                     updateVideoLabel(peerId);
                 }
             });
@@ -502,13 +531,11 @@
             
             let displayName = info.role === 'teacher' ? 'Teacher' : `Student (${info.username})`;
             
-            // Update camera video label
             let cameraEl = document.getElementById(`video-${peerId}-camera`);
             if (cameraEl) {
                 let label = cameraEl.querySelector('.label');
                 if (label) label.innerText = displayName;
             }
-            // Update screen share video label
             let screenEl = document.getElementById(`video-${peerId}-screen`);
             if (screenEl) {
                 let label = screenEl.querySelector('.label');
@@ -540,7 +567,6 @@
             video.playsInline = true;
             if (type === 'screen') video.classList.add('screen-share');
 
-            // Get display name from stored peer info
             let info = peerUserInfo[peerId];
             let displayName = 'Participant';
             if (info) {
@@ -824,7 +850,7 @@
             });
         }
 
-        // ========== FIXED CHAT - Teacher shows as "Teacher" on both sides ==========
+        // ========== CHAT - Teacher shows as "Teacher" on both sides ==========
         function sendMessage() {
             let input = document.getElementById('chat-input');
             let text = input.value.trim();
@@ -836,17 +862,17 @@
                 message: text, 
                 role: role
             });
-            addMessage(username, text, role);
+            addChatMessage(username, text, role);
             input.value = '';
         }
 
         socket.on('chat', (data) => {
             if (data.username !== username) {
-                addMessage(data.username, data.message, data.role);
+                addChatMessage(data.username, data.message, data.role);
             }
         });
 
-        function addMessage(sender, text, senderRole) {
+        function addChatMessage(sender, text, senderRole) {
             let container = document.getElementById('messages');
             let msg = document.createElement('div');
             msg.className = `message ${senderRole}`;
@@ -866,12 +892,12 @@
         function raiseHand() {
             if (!roomCode) return;
             socket.emit('raise-hand', { roomCode, username, role: role });
-            addMessage(username, 'raised hand ✋', role);
+            addChatMessage(username, 'raised hand ✋', role);
         }
 
         socket.on('hand-raised', (data) => {
             if (data.username !== username) {
-                addMessage(data.username, 'raised hand ✋', data.role);
+                addChatMessage(data.username, 'raised hand ✋', data.role);
             }
             let alert = document.getElementById('hand-raise-alert');
             alert.innerText = `✋ ${data.username} raised their hand!`;
@@ -883,6 +909,8 @@
             if (localStream) localStream.getTracks().forEach(t => t.stop());
             if (screenStream) screenStream.getTracks().forEach(t => t.stop());
             if (peer) peer.destroy();
+            
+            addSystemMessage(`👋 ${username} (${role}) left the class`);
             
             document.getElementById('participants').innerHTML = '';
             document.getElementById('messages').innerHTML = '';
@@ -910,6 +938,7 @@
         function endClass() {
             if (role !== 'teacher') return;
             socket.emit('end-class', { roomCode });
+            addSystemMessage(`🔚 Class ended by Teacher`);
             leaveRoom();
         }
     </script>
