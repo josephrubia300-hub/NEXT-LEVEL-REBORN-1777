@@ -27,10 +27,13 @@
   button {
     background:#2c3ea8; color:white; border:none; padding:12px 24px;
     border-radius:10px; cursor:pointer; margin:5px;
+    transition:all 0.2s;
   }
-  button:hover { background:#1c2c80; }
+  button:hover { background:#1c2c80; transform:scale(1.02); }
   button.end-class { background:#d32f2f; }
+  button.end-class:hover { background:#b71c1c; }
   button.leave-class { background:#ff9800; }
+  button.leave-class:hover { background:#e68900; }
   
   .dashboard { padding:20px; max-width:1400px; margin:0 auto; }
   h2 { color:#2c3ea8; margin:20px 0; }
@@ -41,7 +44,9 @@
   .course-card {
     background:linear-gradient(135deg,#5a6bff,#7a9cff); padding:20px;
     border-radius:16px; color:white; cursor:pointer;
+    transition:transform 0.2s;
   }
+  .course-card:hover { transform:translateY(-5px); }
   .course-card button {
     background:white; color:#2c3ea8; margin-top:12px; border:none;
     padding:8px 16px; border-radius:8px; cursor:pointer;
@@ -54,20 +59,50 @@
   .participant-wrapper {
     background:white; border-radius:16px; padding:12px;
     width:300px; box-shadow:0 4px 12px rgba(0,0,0,0.1);
-    transition:all 0.3s;
+    transition:all 0.3s ease;
+    cursor:pointer;
   }
-  .participant-wrapper.expanded { width:100%; max-width:800px; }
+  .participant-wrapper.expanded {
+    position:fixed !important;
+    top:50% !important;
+    left:50% !important;
+    transform:translate(-50%, -50%) !important;
+    width:90vw !important;
+    max-width:1200px !important;
+    z-index:10000 !important;
+    background:black !important;
+    box-shadow:0 0 0 1000px rgba(0,0,0,0.9) !important;
+  }
+  .participant-wrapper.expanded video {
+    width:100% !important;
+    height:auto !important;
+    max-height:80vh !important;
+  }
+  .participant-wrapper.expanded .participant-controls {
+    position:absolute;
+    bottom:20px;
+    left:0;
+    right:0;
+    background:rgba(0,0,0,0.7);
+    padding:10px;
+    border-radius:30px;
+    width:fit-content;
+    margin:0 auto;
+  }
   .participant-video {
     width:100%; border-radius:12px; background:#000;
-    cursor:pointer; aspect-ratio:4/3; object-fit:cover;
+    aspect-ratio:4/3; object-fit:cover;
+    pointer-events:none;
   }
   .teacher-video { border:3px solid #2196f3; }
   .student-video { border:3px solid #4caf50; }
   .screen-share-video { border:3px solid #ff9800; }
   .participant-label { margin-top:8px; font-weight:bold; text-align:center; }
-  .participant-controls { display:flex; justify-content:center; gap:10px; margin-top:8px; }
-  .mute-btn { background:#ff5722; padding:5px 10px; font-size:12px; }
-  .volume-slider { width:80px; }
+  .participant-controls { display:flex; justify-content:center; gap:10px; margin-top:8px; pointer-events:auto; }
+  .participant-controls button, .participant-controls input { pointer-events:auto; }
+  .mute-btn { background:#ff5722; padding:5px 10px; font-size:12px; border:none; border-radius:5px; cursor:pointer; color:white; }
+  .volume-slider { width:80px; cursor:pointer; }
+  .expand-btn { background:#2196f3; padding:5px 10px; font-size:12px; border:none; border-radius:5px; cursor:pointer; color:white; }
   
   #chat { max-width:800px; margin:20px auto; background:white; border-radius:16px; overflow:hidden; }
   #messages { height:250px; overflow-y:auto; padding:15px; background:#fafafa; }
@@ -86,6 +121,22 @@
   .error-message { color: red; background: #ffeeee; padding: 8px; border-radius: 5px; margin: 5px 0; display: none; }
   .welcome-hero { text-align:center; padding:40px; background:linear-gradient(135deg,#1a237e,#0d47a1); color:white; border-radius:20px; margin-bottom:20px; }
   .hero-overlay { padding:20px; }
+  .close-expanded { display:none; }
+  .participant-wrapper.expanded .close-expanded {
+    display:block;
+    position:absolute;
+    top:20px;
+    right:20px;
+    background:red;
+    color:white;
+    border:none;
+    border-radius:50%;
+    width:40px;
+    height:40px;
+    font-size:20px;
+    cursor:pointer;
+    z-index:10001;
+  }
 </style>
 </head>
 <body>
@@ -156,7 +207,7 @@
   let peer = null, myPeerId = null;
   let connections = {}, screenConnections = {};
   let peerInfo = {}, cameraActive = false, screenActive = false;
-  let pendingCalls = {}, pendingScreenCalls = {};
+  let pendingCalls = [];
 
   function escapeHtml(str) {
     if (!str) return '';
@@ -257,7 +308,9 @@
         iceServers: [
           { urls: 'stun:stun.l.google.com:19302' },
           { urls: 'stun:stun1.l.google.com:19302' },
-          { urls: 'stun:stun2.l.google.com:19302' }
+          { urls: 'stun:stun2.l.google.com:19302' },
+          { urls: 'stun:stun3.l.google.com:19302' },
+          { urls: 'stun:stun4.l.google.com:19302' }
         ]
       }
     });
@@ -270,18 +323,18 @@
 
     peer.on('call', (call) => {
       console.log("Incoming call from", call.peer);
-      if (localStream && call.metadata && call.metadata.type === 'screen') {
+      if (call.metadata && call.metadata.type === 'screen') {
         if (screenStream) {
           call.answer(screenStream);
           setupScreenCall(call);
         } else {
-          pendingScreenCalls[call.peer] = call;
+          pendingCalls.push({ call, type: 'screen' });
         }
       } else if (localStream) {
         call.answer(localStream);
         setupCall(call);
       } else {
-        pendingCalls[call.peer] = call;
+        pendingCalls.push({ call, type: 'camera' });
       }
     });
 
@@ -309,6 +362,7 @@
     conn.on('data', (data) => {
       if (data.type === 'info') {
         peerInfo[conn.peer] = { username: data.username, role: data.role };
+        updateVideoLabels();
       } else if (data.type === 'chat') {
         addChatMessage(data.sender, data.text, data.role);
       } else if (data.type === 'hand') {
@@ -337,6 +391,26 @@
     screenConnections[call.peer] = call;
   }
 
+  function updateVideoLabels() {
+    // Update labels for all remote videos
+    Object.keys(peerInfo).forEach(peerId => {
+      const wrapper = document.getElementById(`remote-${peerId}`) || document.getElementById(`remote-screen-${peerId}`);
+      if (wrapper) {
+        const label = wrapper.querySelector('.participant-label');
+        if (label && peerInfo[peerId]) {
+          const isScreen = wrapper.id.includes('screen');
+          label.textContent = isScreen 
+            ? `${peerInfo[peerId].username} (Screen Share)`
+            : `${peerInfo[peerId].username} (${peerInfo[peerId].role === 'teacher' ? 'Teacher' : 'Student'})`;
+        }
+        const video = wrapper.querySelector('video');
+        if (video && peerInfo[peerId] && peerInfo[peerId].role === 'teacher') {
+          video.classList.add('teacher-video');
+        }
+      }
+    });
+  }
+
   function displayRemoteVideo(peerId, stream, type) {
     const container = document.getElementById("participants");
     const existingId = type === 'screen' ? `remote-screen-${peerId}` : `remote-${peerId}`;
@@ -349,14 +423,16 @@
     const video = document.createElement("video");
     video.className = "participant-video";
     if (type === 'screen') video.classList.add("screen-share-video");
+    else if (peerInfo[peerId] && peerInfo[peerId].role === 'teacher') video.classList.add("teacher-video");
+    else video.classList.add("student-video");
+    
     video.autoplay = true;
     video.playsInline = true;
     video.srcObject = stream;
-    video.onclick = () => wrapper.classList.toggle('expanded');
 
     const label = document.createElement("div");
     label.className = "participant-label";
-    let displayName = type === 'screen' ? "Screen Share" : "Student";
+    let displayName = type === 'screen' ? "Screen Share" : (peerInfo[peerId]?.role === 'teacher' ? "Teacher" : "Student");
     if (peerInfo[peerId] && peerInfo[peerId].username) {
       displayName = type === 'screen' 
         ? `${peerInfo[peerId].username} (Screen Share)`
@@ -366,105 +442,169 @@
 
     const controls = document.createElement("div");
     controls.className = "participant-controls";
+
     const muteBtn = document.createElement("button");
     muteBtn.className = "mute-btn";
-    muteBtn.textContent = "Mute";
-    muteBtn.onclick = () => {
+    muteBtn.textContent = "🔊 Mute";
+    muteBtn.onclick = (e) => {
+      e.stopPropagation();
       const audio = stream.getAudioTracks()[0];
       if (audio) {
         audio.enabled = !audio.enabled;
-        muteBtn.textContent = audio.enabled ? "Mute" : "Unmute";
+        muteBtn.textContent = audio.enabled ? "🔊 Mute" : "🔇 Unmute";
       }
     };
+
     const volumeSlider = document.createElement("input");
     volumeSlider.type = "range";
     volumeSlider.min = 0;
     volumeSlider.max = 1;
     volumeSlider.step = 0.1;
     volumeSlider.value = 1;
-    volumeSlider.oninput = () => video.volume = volumeSlider.value;
     volumeSlider.className = "volume-slider";
+    volumeSlider.oninput = (e) => {
+      e.stopPropagation();
+      video.volume = parseFloat(e.target.value);
+    };
+
+    const expandBtn = document.createElement("button");
+    expandBtn.className = "expand-btn";
+    expandBtn.textContent = "🖥️ Expand";
+    expandBtn.onclick = (e) => {
+      e.stopPropagation();
+      document.querySelectorAll('.participant-wrapper.expanded').forEach(w => w.classList.remove('expanded'));
+      wrapper.classList.add('expanded');
+    };
 
     controls.appendChild(muteBtn);
     controls.appendChild(volumeSlider);
+    controls.appendChild(expandBtn);
+
+    const closeBtn = document.createElement("button");
+    closeBtn.className = "close-expanded";
+    closeBtn.textContent = "✕";
+    closeBtn.onclick = (e) => {
+      e.stopPropagation();
+      wrapper.classList.remove('expanded');
+    };
+
     wrapper.appendChild(video);
     wrapper.appendChild(label);
     wrapper.appendChild(controls);
+    wrapper.appendChild(closeBtn);
+    
+    wrapper.onclick = (e) => {
+      if (e.target === wrapper || e.target === video) {
+        document.querySelectorAll('.participant-wrapper.expanded').forEach(w => w.classList.remove('expanded'));
+        wrapper.classList.add('expanded');
+      }
+    };
+    
     container.appendChild(wrapper);
   }
 
   function startCamera() {
     if (cameraActive) return alert("Camera already active");
+    
     navigator.mediaDevices.getUserMedia({ video: true, audio: true })
       .then(stream => {
         localStream = stream;
         cameraActive = true;
+        
+        // Display local video
         const wrapper = document.createElement("div");
         wrapper.className = "participant-wrapper";
+        wrapper.id = "local-video";
+        
         const video = document.createElement("video");
         video.className = "participant-video " + (role === "teacher" ? "teacher-video" : "student-video");
         video.autoplay = true;
         video.muted = true;
         video.srcObject = stream;
-        video.onclick = () => wrapper.classList.toggle('expanded');
+        
         const label = document.createElement("div");
         label.className = "participant-label";
         label.textContent = role === "teacher" ? "👩‍🏫 Teacher (You)" : `${username} (You)`;
+        
         const controls = document.createElement("div");
         controls.className = "participant-controls";
+        
         const muteBtn = document.createElement("button");
         muteBtn.className = "mute-btn";
-        muteBtn.textContent = "Mute My Mic";
+        muteBtn.textContent = "🔊 Mute My Mic";
         muteBtn.onclick = () => {
           const audio = stream.getAudioTracks()[0];
           if (audio) {
             audio.enabled = !audio.enabled;
-            muteBtn.textContent = audio.enabled ? "Mute My Mic" : "Unmute My Mic";
+            muteBtn.textContent = audio.enabled ? "🔊 Mute My Mic" : "🔇 Unmute My Mic";
           }
         };
+        
         const volumeSlider = document.createElement("input");
         volumeSlider.type = "range";
         volumeSlider.min = 0;
         volumeSlider.max = 1;
         volumeSlider.step = 0.1;
         volumeSlider.value = 1;
-        volumeSlider.oninput = () => video.volume = volumeSlider.value;
+        volumeSlider.className = "volume-slider";
+        volumeSlider.oninput = (e) => video.volume = parseFloat(e.target.value);
+        
+        const expandBtn = document.createElement("button");
+        expandBtn.className = "expand-btn";
+        expandBtn.textContent = "🖥️ Expand";
+        expandBtn.onclick = () => wrapper.classList.toggle('expanded');
+        
         controls.appendChild(muteBtn);
         controls.appendChild(volumeSlider);
+        controls.appendChild(expandBtn);
+        
         wrapper.appendChild(video);
         wrapper.appendChild(label);
         wrapper.appendChild(controls);
         document.getElementById("participants").appendChild(wrapper);
         
-        Object.values(pendingCalls).forEach(call => {
-          if (call && typeof call.answer === 'function') {
+        // Answer any pending calls
+        pendingCalls.forEach(({ call, type }) => {
+          if (type === 'camera') {
             call.answer(stream);
+            setupCall(call);
+          } else if (type === 'screen' && screenStream) {
+            call.answer(screenStream);
+            setupScreenCall(call);
+          }
+        });
+        pendingCalls = [];
+        
+        // Call all peers with camera stream
+        const peers = Object.keys(connections);
+        peers.forEach(peerId => {
+          if (!connections[peerId]) {
+            const call = peer.call(peerId, stream);
             setupCall(call);
           }
         });
-        pendingCalls = {};
-        
-        // Call all peers with camera stream
-        Object.values(peer).forEach(p => {});
       })
       .catch(err => {
-        showError("Camera error: " + err.message);
+        console.error("Camera error:", err);
+        let errorMsg = err.name === "NotAllowedError" ? "Please allow camera and microphone access." : err.message;
+        showError("Camera error: " + errorMsg);
+        alert("Camera access denied. Please check browser permissions.");
         cameraActive = false;
       });
   }
 
-  // ========== FIXED SCREEN SHARING (BROADCASTS TO ALL PEERS) ==========
   function shareScreen() {
     if (screenActive) {
-      // Stop screen sharing if already active
+      // Stop sharing
       if (screenStream) {
         screenStream.getTracks().forEach(track => track.stop());
         screenStream = null;
       }
       screenActive = false;
-      // Remove screen share video from UI
-      const screenWrapper = document.querySelector('.participant-wrapper .screen-share-video')?.closest('.participant-wrapper');
+      const screenWrapper = document.getElementById("local-screen-share");
       if (screenWrapper) screenWrapper.remove();
+      Object.values(screenConnections).forEach(call => call.close());
+      screenConnections = {};
       alert("Screen sharing stopped");
       return;
     }
@@ -474,86 +614,77 @@
       return;
     }
 
-    navigator.mediaDevices.getDisplayMedia({ 
-      video: true,
-      audio: false
-    })
-    .then(stream => {
-      screenStream = stream;
-      screenActive = true;
+    navigator.mediaDevices.getDisplayMedia({ video: true, audio: false })
+      .then(stream => {
+        screenStream = stream;
+        screenActive = true;
 
-      // Display local screen share
-      const wrapper = document.createElement("div");
-      wrapper.className = "participant-wrapper";
-      wrapper.id = "local-screen-share";
+        // Display local screen share
+        const wrapper = document.createElement("div");
+        wrapper.className = "participant-wrapper";
+        wrapper.id = "local-screen-share";
 
-      const video = document.createElement("video");
-      video.className = "participant-video screen-share-video";
-      video.autoplay = true;
-      video.playsInline = true;
-      video.srcObject = stream;
-      video.onclick = () => wrapper.classList.toggle('expanded');
+        const video = document.createElement("video");
+        video.className = "participant-video screen-share-video";
+        video.autoplay = true;
+        video.playsInline = true;
+        video.srcObject = stream;
 
-      const label = document.createElement("div");
-      label.className = "participant-label";
-      label.textContent = `${username} (Screen Share - You)`;
+        const label = document.createElement("div");
+        label.className = "participant-label";
+        label.textContent = `${username} (Screen Share - You)`;
 
-      const stopBtn = document.createElement("button");
-      stopBtn.textContent = "Stop Sharing";
-      stopBtn.style.background = "#d32f2f";
-      stopBtn.style.padding = "5px 10px";
-      stopBtn.style.fontSize = "12px";
-      stopBtn.style.marginTop = "5px";
-      stopBtn.onclick = () => {
-        if (screenStream) {
-          screenStream.getTracks().forEach(track => track.stop());
-          screenStream = null;
-        }
-        screenActive = false;
-        wrapper.remove();
-        // Also close all screen share connections to peers
-        Object.values(screenConnections).forEach(call => call.close());
-        screenConnections = {};
-      };
+        const controls = document.createElement("div");
+        controls.className = "participant-controls";
 
-      wrapper.appendChild(video);
-      wrapper.appendChild(label);
-      wrapper.appendChild(stopBtn);
-      document.getElementById("participants").appendChild(wrapper);
+        const stopBtn = document.createElement("button");
+        stopBtn.textContent = "⏹️ Stop Sharing";
+        stopBtn.style.background = "#d32f2f";
+        stopBtn.onclick = () => {
+          if (screenStream) {
+            screenStream.getTracks().forEach(track => track.stop());
+            screenStream = null;
+          }
+          screenActive = false;
+          wrapper.remove();
+          Object.values(screenConnections).forEach(call => call.close());
+          screenConnections = {};
+        };
 
-      // Broadcast screen stream to ALL connected peers
-      const peers = Object.keys(connections);
-      peers.forEach(peerId => {
-        if (peerId !== myPeerId) {
-          const screenCall = peer.call(peerId, stream, { metadata: { type: 'screen' } });
-          setupScreenCall(screenCall);
-          screenConnections[peerId] = screenCall;
-        }
+        controls.appendChild(stopBtn);
+        wrapper.appendChild(video);
+        wrapper.appendChild(label);
+        wrapper.appendChild(controls);
+        document.getElementById("participants").appendChild(wrapper);
+
+        // Broadcast screen stream to all connected peers
+        const peers = Object.keys(connections);
+        peers.forEach(peerId => {
+          if (peerId !== myPeerId) {
+            const screenCall = peer.call(peerId, stream, { metadata: { type: 'screen' } });
+            setupScreenCall(screenCall);
+            screenConnections[peerId] = screenCall;
+          }
+        });
+
+        // Also broadcast to any peers that join later
+        stream.getVideoTracks()[0].onended = () => {
+          if (screenStream) {
+            screenStream.getTracks().forEach(track => track.stop());
+            screenStream = null;
+          }
+          screenActive = false;
+          const screenWrapper = document.getElementById("local-screen-share");
+          if (screenWrapper) screenWrapper.remove();
+          Object.values(screenConnections).forEach(call => call.close());
+          screenConnections = {};
+        };
+      })
+      .catch(err => {
+        console.error("Screen share error:", err);
+        let errorMsg = err.name === "NotAllowedError" ? "Permission denied. Please allow screen sharing." : err.message;
+        showError("Screen share failed: " + errorMsg);
       });
-
-      // When user clicks browser's stop button
-      stream.getVideoTracks()[0].onended = () => {
-        if (screenStream) {
-          screenStream.getTracks().forEach(track => track.stop());
-          screenStream = null;
-        }
-        screenActive = false;
-        const screenWrapper = document.getElementById("local-screen-share");
-        if (screenWrapper) screenWrapper.remove();
-        Object.values(screenConnections).forEach(call => call.close());
-        screenConnections = {};
-        showError("Screen sharing ended");
-      };
-    })
-    .catch(err => {
-      console.error("Screen share error:", err);
-      let errorMsg = "Screen share failed: ";
-      if (err.name === "NotAllowedError") errorMsg += "Permission denied. Please allow screen sharing.";
-      else if (err.name === "NotFoundError") errorMsg += "No screen capture source found.";
-      else errorMsg += err.message;
-      showError(errorMsg);
-      alert(errorMsg);
-    });
   }
 
   function sendChatMessage() {
@@ -592,6 +723,11 @@
     setTimeout(() => notif.style.display = "none", 5000);
   });
 
+  function exitClass() {
+    if (role === "teacher") endClass();
+    else leaveClass();
+  }
+
   function leaveClass() {
     if (localStream) localStream.getTracks().forEach(t => t.stop());
     if (screenStream) screenStream.getTracks().forEach(t => t.stop());
@@ -606,6 +742,7 @@
     connections = {};
     screenConnections = {};
     peerInfo = {};
+    pendingCalls = [];
   }
 
   function endClass() {
