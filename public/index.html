@@ -858,7 +858,7 @@
             });
         }
 
-        // ========== CHAT - FIXED ==========
+        // ========== CHAT - FIXED (NO DUPLICATES) ==========
         function sendMessage() {
             let input = document.getElementById('chat-input');
             let text = input.value.trim();
@@ -866,8 +866,7 @@
             
             let messageId = Date.now() + '-' + Math.random() + '-' + username;
             
-            console.log('Sending message - role:', role, 'username:', username);
-            
+            // Only send to server - server will echo back to all clients including sender
             socket.emit('chat', { 
                 roomCode, 
                 username: username, 
@@ -876,18 +875,20 @@
                 messageId: messageId
             });
             
-            addChatMessageToUI(username, text, role, messageId);
+            // Clear input - do NOT add locally (wait for server echo)
             input.value = '';
         }
 
         socket.on('chat', (data) => {
-            console.log('Received chat - role:', data.role, 'username:', data.username, 'messageId:', data.messageId);
-            
+            // Prevent duplicate messages
             if (processedMessages.has(data.messageId)) return;
             processedMessages.add(data.messageId);
-            setTimeout(() => processedMessages.delete(data.messageId), 1000);
             
+            // Add message to UI
             addChatMessageToUI(data.username, data.message, data.role, data.messageId);
+            
+            // Remove from cache after short delay
+            setTimeout(() => processedMessages.delete(data.messageId), 500);
         });
 
         function addChatMessageToUI(sender, text, senderRole, messageId) {
@@ -911,58 +912,7 @@
             if (!roomCode) return;
             let messageId = Date.now() + '-' + Math.random() + '-' + username;
             socket.emit('raise-hand', { roomCode, username, role: role, messageId: messageId });
-            addChatMessageToUI(username, 'raised hand ✋', role, messageId);
+            // Don't add locally, wait for server echo
         }
 
-        socket.on('hand-raised', (data) => {
-            if (processedMessages.has(data.messageId)) return;
-            processedMessages.add(data.messageId);
-            setTimeout(() => processedMessages.delete(data.messageId), 1000);
-            
-            addChatMessageToUI(data.username, 'raised hand ✋', data.role, data.messageId);
-            
-            let alert = document.getElementById('hand-raise-alert');
-            alert.innerText = `✋ ${escapeHtml(data.username)} raised their hand!`;
-            alert.style.display = 'block';
-            setTimeout(() => alert.style.display = 'none', 5000);
-        });
-
-        function leaveRoom() {
-            if (localStream) localStream.getTracks().forEach(t => t.stop());
-            if (screenStream) screenStream.getTracks().forEach(t => t.stop());
-            if (peer) peer.destroy();
-            
-            socket.emit('leave-room', { roomCode, username, role, peerId: myPeerId });
-            
-            document.getElementById('participants').innerHTML = '';
-            document.getElementById('messages').innerHTML = '';
-            document.getElementById('classroom').style.display = 'none';
-            document.getElementById('platform').style.display = 'block';
-            
-            cameraOn = false;
-            screenOn = false;
-            connectedPeers = {};
-            peerUserInfo = {};
-            roomCode = null;
-            processedMessages.clear();
-            
-            let shareBtn = document.getElementById('shareScreenBtn');
-            if (shareBtn) {
-                shareBtn.innerText = '🖥️ Share Screen';
-                shareBtn.style.background = '';
-            }
-            if (isMobile()) exitFullscreen();
-            
-            if (role === 'teacher') {
-                socket.emit('get-rooms');
-            }
-        }
-
-        function endClass() {
-            if (role !== 'teacher') return;
-            socket.emit('end-class', { roomCode });
-            leaveRoom();
-        }
-    </script>
-</body>
-</html>
+        socket.on('hand-raised', (data
