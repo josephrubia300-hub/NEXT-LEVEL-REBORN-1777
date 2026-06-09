@@ -8,15 +8,15 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Arial, sans-serif; background: #eef1f7; }
 
-        #loginPage {
-            height: 100vh;
+        #loginPage, #signupPage {
+            min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
             background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)),
                         url('https://i.postimg.cc/jd0ZRMCV/next-level.jpg') center/cover;
         }
-        .login-box {
+        .login-box, .signup-box {
             background: rgba(255,255,255,0.95);
             padding: 40px;
             border-radius: 20px;
@@ -24,8 +24,9 @@
             max-width: 400px;
             width: 90%;
         }
-        .login-box h2 { color: #2c3ea8; margin-bottom: 20px; }
-        .login-box input, .login-box select {
+        .login-box h2, .signup-box h2 { color: #2c3ea8; margin-bottom: 20px; }
+        .login-box input, .login-box select,
+        .signup-box input, .signup-box select {
             width: 100%;
             padding: 12px;
             margin: 10px 0;
@@ -44,6 +45,28 @@
         button:hover { background: #1c2c80; }
         button.danger { background: #d32f2f; }
         button.warning { background: #ff9800; }
+        .toggle-link {
+            margin-top: 15px;
+            color: #2c3ea8;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+        .error-msg {
+            color: red;
+            background: #ffebee;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px;
+            display: none;
+        }
+        .success-msg {
+            color: green;
+            background: #e8f5e9;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px;
+            display: none;
+        }
 
         .dashboard { padding: 20px; max-width: 1400px; margin: 0 auto; }
         .welcome-hero {
@@ -236,33 +259,45 @@
             z-index: 1000;
             display: none;
         }
-        .error-msg {
-            color: red;
-            background: #ffebee;
-            padding: 10px;
-            border-radius: 8px;
-            margin: 10px;
-            display: none;
-        }
         .screen-share { border: 2px solid #ff9800 !important; }
     </style>
 </head>
 <body>
 
+    <!-- LOGIN PAGE -->
     <div id="loginPage">
         <div class="login-box">
             <h2>🎓 Next Level Academy</h2>
-            <input type="text" id="username" placeholder="Username"><br>
-            <input type="password" id="password" placeholder="Password"><br>
-            <select id="role">
+            <input type="text" id="loginUsername" placeholder="Username"><br>
+            <input type="password" id="loginPassword" placeholder="Password"><br>
+            <select id="loginRole">
                 <option value="student">Student</option>
                 <option value="teacher">Teacher</option>
             </select><br>
             <button onclick="login()">Login</button>
-            <p style="margin-top: 15px; color: #2c3ea8; cursor: pointer;" onclick="alert('Any username/password works')">Sign Up</p>
+            <div class="toggle-link" onclick="showSignupPage()">Don't have an account? Sign Up</div>
+            <div id="loginError" class="error-msg"></div>
         </div>
     </div>
 
+    <!-- SIGNUP PAGE -->
+    <div id="signupPage" style="display: none;">
+        <div class="signup-box">
+            <h2>📝 Create Account</h2>
+            <input type="text" id="signupUsername" placeholder="Choose Username"><br>
+            <input type="password" id="signupPassword" placeholder="Choose Password"><br>
+            <select id="signupRole">
+                <option value="student">Student</option>
+                <option value="teacher">Teacher</option>
+            </select><br>
+            <button onclick="signup()">Sign Up</button>
+            <div class="toggle-link" onclick="showLoginPage()">Already have an account? Login</div>
+            <div id="signupError" class="error-msg"></div>
+            <div id="signupSuccess" class="success-msg"></div>
+        </div>
+    </div>
+
+    <!-- DASHBOARD -->
     <div id="platform" style="display: none;">
         <div class="dashboard">
             <div class="welcome-hero">
@@ -278,10 +313,11 @@
                     <button onclick="createRoom()">Start Lesson</button>
                 </div>
             </div>
+            <div class="toggle-link" onclick="logout()">🚪 Logout</div>
         </div>
     </div>
 
-    <div id="classroom">
+    <div id="classroom" style="display: none;">
         <div id="hand-raise-alert">✋ Hand raised!</div>
         <h2>🎥 Live: <span id="room-title"></span></h2>
         <div id="error-msg" class="error-msg"></div>
@@ -305,6 +341,144 @@
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 
     <script>
+        // ============================================
+        // USER AUTHENTICATION (localStorage)
+        // ============================================
+        
+        // Initialize users in localStorage if not exists
+        if (!localStorage.getItem('users')) {
+            // Create default admin/teacher account for demo
+            const defaultUsers = [
+                { username: 'teacher', password: 'teacher123', role: 'teacher' },
+                { username: 'student', password: 'student123', role: 'student' }
+            ];
+            localStorage.setItem('users', JSON.stringify(defaultUsers));
+        }
+
+        function showSignupPage() {
+            document.getElementById('loginPage').style.display = 'none';
+            document.getElementById('signupPage').style.display = 'flex';
+            document.getElementById('signupError').style.display = 'none';
+            document.getElementById('signupSuccess').style.display = 'none';
+        }
+
+        function showLoginPage() {
+            document.getElementById('signupPage').style.display = 'none';
+            document.getElementById('loginPage').style.display = 'flex';
+            document.getElementById('loginError').style.display = 'none';
+        }
+
+        function signup() {
+            const username = document.getElementById('signupUsername').value.trim();
+            const password = document.getElementById('signupPassword').value.trim();
+            const role = document.getElementById('signupRole').value;
+            
+            // Validation
+            if (!username || !password) {
+                showSignupError('Please enter both username and password');
+                return;
+            }
+            
+            if (username.length < 3) {
+                showSignupError('Username must be at least 3 characters');
+                return;
+            }
+            
+            if (password.length < 4) {
+                showSignupError('Password must be at least 4 characters');
+                return;
+            }
+            
+            // Check if user already exists
+            const users = JSON.parse(localStorage.getItem('users'));
+            if (users.find(u => u.username === username)) {
+                showSignupError('Username already exists. Please choose another.');
+                return;
+            }
+            
+            // Add new user
+            users.push({ username, password, role });
+            localStorage.setItem('users', JSON.stringify(users));
+            
+            // Show success and redirect to login
+            document.getElementById('signupSuccess').innerText = 'Account created successfully! Please login.';
+            document.getElementById('signupSuccess').style.display = 'block';
+            
+            setTimeout(() => {
+                showLoginPage();
+                document.getElementById('loginUsername').value = username;
+            }, 1500);
+        }
+
+        function showSignupError(msg) {
+            const errorDiv = document.getElementById('signupError');
+            errorDiv.innerText = msg;
+            errorDiv.style.display = 'block';
+            setTimeout(() => errorDiv.style.display = 'none', 3000);
+        }
+
+        function showLoginError(msg) {
+            const errorDiv = document.getElementById('loginError');
+            errorDiv.innerText = msg;
+            errorDiv.style.display = 'block';
+            setTimeout(() => errorDiv.style.display = 'none', 3000);
+        }
+
+        function login() {
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value.trim();
+            const role = document.getElementById('loginRole').value;
+            
+            if (!username || !password) {
+                showLoginError('Please enter username and password');
+                return;
+            }
+            
+            // Verify credentials
+            const users = JSON.parse(localStorage.getItem('users'));
+            const user = users.find(u => u.username === username && u.password === password);
+            
+            if (!user) {
+                showLoginError('Invalid username or password');
+                return;
+            }
+            
+            if (user.role !== role) {
+                showLoginError(`This account is registered as a ${user.role}. Please select the correct role.`);
+                return;
+            }
+            
+            // Login successful - store session
+            sessionStorage.setItem('currentUser', JSON.stringify({ username, role }));
+            
+            // Initialize the app with the logged-in user
+            initApp(username, role);
+        }
+
+        function logout() {
+            sessionStorage.removeItem('currentUser');
+            document.getElementById('platform').style.display = 'none';
+            document.getElementById('classroom').style.display = 'none';
+            document.getElementById('loginPage').style.display = 'flex';
+            document.getElementById('loginUsername').value = '';
+            document.getElementById('loginPassword').value = '';
+        }
+
+        // Check if user is already logged in on page load
+        function checkLoggedInUser() {
+            const savedUser = sessionStorage.getItem('currentUser');
+            if (savedUser) {
+                const user = JSON.parse(savedUser);
+                initApp(user.username, user.role);
+                return true;
+            }
+            return false;
+        }
+
+        // ============================================
+        // MAIN APPLICATION
+        // ============================================
+        
         let socket = io();
         let username = "", role = "", roomCode = null;
         let localStream = null, screenStream = null;
@@ -315,6 +489,46 @@
         let pendingCalls = [];
         let processedMessages = new Set();
 
+        function initApp(user, userRole) {
+            username = user;
+            role = userRole;
+            
+            document.getElementById('loginPage').style.display = 'none';
+            document.getElementById('signupPage').style.display = 'none';
+            document.getElementById('platform').style.display = 'block';
+            document.getElementById('welcomeMessage').innerHTML = `Hello ${username}! You are a ${role}.`;
+
+            if (role === 'teacher') {
+                document.getElementById('teacher-panel').style.display = 'block';
+            }
+
+            let exitBtn = document.getElementById('exitBtn');
+            if (role === 'teacher') {
+                exitBtn.innerText = 'End Class';
+                exitBtn.className = 'danger';
+                exitBtn.onclick = endClass;
+            } else {
+                exitBtn.innerText = 'Leave Class';
+                exitBtn.className = 'warning';
+                exitBtn.onclick = leaveRoom;
+            }
+
+            socket.emit('get-rooms');
+        }
+
+        // Check for logged in user on page load
+        if (!checkLoggedInUser()) {
+            // No user logged in, show login page
+            document.getElementById('loginPage').style.display = 'flex';
+            document.getElementById('signupPage').style.display = 'none';
+            document.getElementById('platform').style.display = 'none';
+            document.getElementById('classroom').style.display = 'none';
+        }
+
+        // ============================================
+        // SOCKET & PEERJS (same as before)
+        // ============================================
+        
         function showError(msg) {
             let errDiv = document.getElementById('error-msg');
             if (errDiv) {
@@ -357,34 +571,6 @@
             msg.innerHTML = `<em>${escapeHtml(text)}</em>`;
             container.appendChild(msg);
             container.scrollTop = container.scrollHeight;
-        }
-
-        function login() {
-            username = document.getElementById('username').value.trim();
-            let pass = document.getElementById('password').value;
-            role = document.getElementById('role').value;
-            if (!username || !pass) return alert('Enter username and password');
-
-            document.getElementById('loginPage').style.display = 'none';
-            document.getElementById('platform').style.display = 'block';
-            document.getElementById('welcomeMessage').innerHTML = `Hello ${username}! You are a ${role}.`;
-
-            if (role === 'teacher') {
-                document.getElementById('teacher-panel').style.display = 'block';
-            }
-
-            let exitBtn = document.getElementById('exitBtn');
-            if (role === 'teacher') {
-                exitBtn.innerText = 'End Class';
-                exitBtn.className = 'danger';
-                exitBtn.onclick = endClass;
-            } else {
-                exitBtn.innerText = 'Leave Class';
-                exitBtn.className = 'warning';
-                exitBtn.onclick = leaveRoom;
-            }
-
-            socket.emit('get-rooms');
         }
 
         socket.on('room-list', (rooms) => {
@@ -858,7 +1044,6 @@
             });
         }
 
-        // ========== CHAT - FIXED (NO DUPLICATES) ==========
         function sendMessage() {
             let input = document.getElementById('chat-input');
             let text = input.value.trim();
@@ -866,7 +1051,6 @@
             
             let messageId = Date.now() + '-' + Math.random() + '-' + username;
             
-            // Only send to server - server will echo back to all clients including sender
             socket.emit('chat', { 
                 roomCode, 
                 username: username, 
@@ -875,19 +1059,13 @@
                 messageId: messageId
             });
             
-            // Clear input - do NOT add locally (wait for server echo)
             input.value = '';
         }
 
         socket.on('chat', (data) => {
-            // Prevent duplicate messages
             if (processedMessages.has(data.messageId)) return;
             processedMessages.add(data.messageId);
-            
-            // Add message to UI
             addChatMessageToUI(data.username, data.message, data.role, data.messageId);
-            
-            // Remove from cache after short delay
             setTimeout(() => processedMessages.delete(data.messageId), 500);
         });
 
@@ -912,7 +1090,6 @@
             if (!roomCode) return;
             let messageId = Date.now() + '-' + Math.random() + '-' + username;
             socket.emit('raise-hand', { roomCode, username, role: role, messageId: messageId });
-            // Don't add locally, wait for server echo
         }
 
         socket.on('hand-raised', (data) => {
