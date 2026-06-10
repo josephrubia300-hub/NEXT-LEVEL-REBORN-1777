@@ -8,13 +8,14 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Arial, sans-serif; background: #eef1f7; }
 
+        /* === LOGIN PAGE BACKGROUND (Image 1) === */
         #loginPage, #signupPage {
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
             background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)),
-                        url('https://i.postimg.cc/jd0ZRMCV/next-level.jpg') center/cover;
+                        url('https://i.postimg.cc/pTfC3mfq/Whats-App-Image-2026-06-10-at-11-47-26.jpg') center/cover no-repeat;
         }
         .login-box, .signup-box {
             background: rgba(255,255,255,0.95);
@@ -68,9 +69,11 @@
             display: none;
         }
 
+        /* === DASHBOARD HERO BACKGROUND (Image 2) === */
         .dashboard { padding: 20px; max-width: 1400px; margin: 0 auto; }
         .welcome-hero {
-            background: linear-gradient(135deg, #1a237e, #0d47a1);
+            background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)),
+                        url('https://i.postimg.cc/tg0mfG0y/Whats-App-Image-2.jpg') center/cover;
             padding: 40px;
             border-radius: 20px;
             color: white;
@@ -109,7 +112,14 @@
             border-radius: 8px;
         }
 
-        #classroom { display: none; padding: 20px; }
+        /* === CLASSROOM BACKGROUND (Image 3) === */
+        #classroom { 
+            display: none; 
+            padding: 20px; 
+            background: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)),
+                        url('https://i.postimg.cc/BvkYDWp0/Whats-App-Image-3.jpg') center/cover fixed;
+            min-height: 100vh;
+        }
         #participants {
             display: flex;
             flex-wrap: wrap;
