@@ -15,7 +15,7 @@
             justify-content: center;
             align-items: center;
             background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)),
-                        url('https://i.postimg.cc/pTfC3mfq/Whats-App-Image-2026-06-10-at-11-47-26.jpg') center/cover no-repeat;
+                        url('https://i.postimg.cc/pTfC3mfq/Whats-App-Image-2026-06-10-at-11-47-26.jpg') center/cover no-repeat fixed;
         }
         .login-box, .signup-box {
             background: rgba(255,255,255,0.95);
@@ -69,11 +69,17 @@
             display: none;
         }
 
-        /* === DASHBOARD HERO BACKGROUND (Image 2) === */
-        .dashboard { padding: 20px; max-width: 1400px; margin: 0 auto; }
+        /* === DASHBOARD FULL PAGE BACKGROUND (Image 2) === */
+        .dashboard { 
+            padding: 20px; 
+            max-width: 1400px; 
+            margin: 0 auto; 
+            min-height: 100vh;
+            background: url('https://i.postimg.cc/tg0mfG0y/Whats-App-Image-2.jpg') center/cover fixed;
+            border-radius: 0;
+        }
         .welcome-hero {
-            background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)),
-                        url('https://i.postimg.cc/tg0mfG0y/Whats-App-Image-2.jpg') center/cover;
+            background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6));
             padding: 40px;
             border-radius: 20px;
             color: white;
@@ -87,7 +93,8 @@
             margin: 20px 0;
         }
         .course-card {
-            background: linear-gradient(135deg, #5a6bff, #7a9cff);
+            background: rgba(90, 107, 255, 0.9);
+            backdrop-filter: blur(3px);
             padding: 20px;
             border-radius: 16px;
             color: white;
@@ -98,9 +105,9 @@
             margin-top: 10px;
         }
         .start-lesson-box {
-            background: white;
-            padding: 20px;
+            background: rgba(255, 255, 255, 0.95);
             border-radius: 16px;
+            padding: 20px;
             margin: 20px 0;
         }
         .start-lesson-box input {
@@ -383,7 +390,6 @@
             const password = document.getElementById('signupPassword').value.trim();
             const role = document.getElementById('signupRole').value;
             
-            // Validation
             if (!username || !password) {
                 showSignupError('Please enter both username and password');
                 return;
@@ -399,18 +405,15 @@
                 return;
             }
             
-            // Check if user already exists
             const users = JSON.parse(localStorage.getItem('users'));
             if (users.find(u => u.username === username)) {
                 showSignupError('Username already exists. Please choose another.');
                 return;
             }
             
-            // Add new user
             users.push({ username, password, role });
             localStorage.setItem('users', JSON.stringify(users));
             
-            // Show success and redirect to login
             document.getElementById('signupSuccess').innerText = 'Account created successfully! Please login.';
             document.getElementById('signupSuccess').style.display = 'block';
             
@@ -444,7 +447,6 @@
                 return;
             }
             
-            // Verify credentials
             const users = JSON.parse(localStorage.getItem('users'));
             const user = users.find(u => u.username === username && u.password === password);
             
@@ -458,10 +460,7 @@
                 return;
             }
             
-            // Login successful - store session
             sessionStorage.setItem('currentUser', JSON.stringify({ username, role }));
-            
-            // Initialize the app with the logged-in user
             initApp(username, role);
         }
 
@@ -474,7 +473,6 @@
             document.getElementById('loginPassword').value = '';
         }
 
-        // Check if user is already logged in on page load
         function checkLoggedInUser() {
             const savedUser = sessionStorage.getItem('currentUser');
             if (savedUser) {
@@ -526,9 +524,7 @@
             socket.emit('get-rooms');
         }
 
-        // Check for logged in user on page load
         if (!checkLoggedInUser()) {
-            // No user logged in, show login page
             document.getElementById('loginPage').style.display = 'flex';
             document.getElementById('signupPage').style.display = 'none';
             document.getElementById('platform').style.display = 'none';
@@ -536,7 +532,7 @@
         }
 
         // ============================================
-        // SOCKET & PEERJS (same as before)
+        // SOCKET & PEERJS
         // ============================================
         
         function showError(msg) {
