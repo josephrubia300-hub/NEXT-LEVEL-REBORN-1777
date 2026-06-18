@@ -46,6 +46,8 @@
         button:hover { background: #1c2c80; }
         button.danger { background: #d32f2f; }
         button.warning { background: #ff9800; }
+        button.success { background: #4caf50; }
+        button.success:hover { background: #388e3c; }
         .toggle-link {
             margin-top: 15px;
             color: #2c3ea8;
@@ -69,7 +71,7 @@
             display: none;
         }
 
-        /* === DASHBOARD FULL PAGE BACKGROUND (Image 2 - UPDATED) === */
+        /* === DASHBOARD FULL PAGE BACKGROUND (Image 2) === */
         .dashboard { 
             padding: 20px; 
             max-width: 1400px; 
@@ -117,6 +119,38 @@
             max-width: 300px;
             border: 1px solid #ccc;
             border-radius: 8px;
+        }
+
+        /* === ADMIN PANEL === */
+        #adminPanel {
+            display: none;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 16px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        #adminPanel h3 { color: #2c3ea8; margin-bottom: 15px; }
+        .admin-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+        .admin-table th, .admin-table td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+        .admin-table th {
+            background: #2c3ea8;
+            color: white;
+        }
+        .admin-table tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+        .admin-actions button {
+            padding: 5px 10px;
+            font-size: 12px;
+            margin: 2px;
         }
 
         /* === CLASSROOM BACKGROUND (Image 3) === */
@@ -330,6 +364,20 @@
                     <button onclick="createRoom()">Start Lesson</button>
                 </div>
             </div>
+
+            <!-- ADMIN PANEL -->
+            <div id="adminPanel">
+                <h3>🔐 Admin Dashboard</h3>
+                <div id="pendingTeachersSection">
+                    <h4>Pending Teacher Approvals</h4>
+                    <div id="pendingTeachersList">No pending requests.</div>
+                </div>
+                <div id="allUsersSection" style="margin-top: 20px;">
+                    <h4>All Registered Users</h4>
+                    <div id="allUsersList"></div>
+                </div>
+            </div>
+
             <div class="toggle-link" onclick="logout()">🚪 Logout</div>
         </div>
     </div>
@@ -364,12 +412,17 @@
         
         // Initialize users in localStorage if not exists
         if (!localStorage.getItem('users')) {
-            // Create default admin/teacher account for demo
+            // Create default accounts
             const defaultUsers = [
-                { username: 'teacher', password: 'teacher123', role: 'teacher' },
-                { username: 'student', password: 'student123', role: 'student' }
+                { username: 'admin', password: 'admin123', role: 'teacher', approved: true },
+                { username: 'student', password: 'student123', role: 'student', approved: true }
             ];
             localStorage.setItem('users', JSON.stringify(defaultUsers));
+        }
+
+        // Initialize pending teachers if not exists
+        if (!localStorage.getItem('pendingTeachers')) {
+            localStorage.setItem('pendingTeachers', JSON.stringify([]));
         }
 
         function showSignupPage() {
@@ -411,7 +464,27 @@
                 return;
             }
             
-            users.push({ username, password, role });
+            // If signing up as teacher, add to pending list instead of approving immediately
+            if (role === 'teacher') {
+                const pending = JSON.parse(localStorage.getItem('pendingTeachers'));
+                if (pending.find(u => u.username === username)) {
+                    showSignupError('You already have a pending teacher request.');
+                    return;
+                }
+                pending.push({ username, password, role, requestedAt: new Date().toISOString() });
+                localStorage.setItem('pendingTeachers', JSON.stringify(pending));
+                
+                document.getElementById('signupSuccess').innerText = 'Teacher account request submitted! Wait for admin approval.';
+                document.getElementById('signupSuccess').style.display = 'block';
+                
+                setTimeout(() => {
+                    showLoginPage();
+                }, 2000);
+                return;
+            }
+            
+            // Student signup - immediate approval
+            users.push({ username, password, role, approved: true });
             localStorage.setItem('users', JSON.stringify(users));
             
             document.getElementById('signupSuccess').innerText = 'Account created successfully! Please login.';
@@ -455,6 +528,12 @@
                 return;
             }
             
+            // Check if teacher is approved
+            if (user.role === 'teacher' && user.approved !== true) {
+                showLoginError('Your teacher account is pending approval. Please wait for admin to approve.');
+                return;
+            }
+            
             if (user.role !== role) {
                 showLoginError(`This account is registered as a ${user.role}. Please select the correct role.`);
                 return;
@@ -484,6 +563,124 @@
         }
 
         // ============================================
+        // ADMIN FUNCTIONS
+        // ============================================
+        
+        function loadAdminPanel() {
+            const users = JSON.parse(localStorage.getItem('users'));
+            const pending = JSON.parse(localStorage.getItem('pendingTeachers'));
+            
+            // Pending teachers
+            const pendingContainer = document.getElementById('pendingTeachersList');
+            if (pending.length === 0) {
+                pendingContainer.innerHTML = 'No pending teacher requests.';
+            } else {
+                let html = '<table class="admin-table"><tr><th>Username</th><th>Requested At</th><th>Actions</th></tr>';
+                pending.forEach((p, index) => {
+                    html += `
+                        <tr>
+                            <td>${p.username}</td>
+                            <td>${new Date(p.requestedAt).toLocaleString()}</td>
+                            <td class="admin-actions">
+                                <button class="success" onclick="approveTeacher(${index})">✅ Approve</button>
+                                <button class="danger" onclick="rejectTeacher(${index})">❌ Reject</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                html += '</table>';
+                pendingContainer.innerHTML = html;
+            }
+            
+            // All users
+            const usersContainer = document.getElementById('allUsersList');
+            let html = `<table class="admin-table"><tr><th>Username</th><th>Role</th><th>Status</th><th>Actions</th></tr>`;
+            users.forEach((u, index) => {
+                const status = u.approved ? '✅ Approved' : '⏳ Pending';
+                html += `
+                    <tr>
+                        <td>${u.username}</td>
+                        <td>${u.role}</td>
+                        <td>${status}</td>
+                        <td class="admin-actions">
+                            ${u.role === 'teacher' && u.username !== 'admin' ? 
+                                `<button class="warning" onclick="revokeTeacher(${index})">🔴 Revoke</button>` : 
+                                'N/A'
+                            }
+                            ${u.username !== 'admin' ? 
+                                `<button class="danger" onclick="deleteUser(${index})">🗑️ Delete</button>` : 
+                                ''
+                            }
+                        </td>
+                    </tr>
+                `;
+            });
+            html += '</table>';
+            usersContainer.innerHTML = html;
+        }
+
+        function approveTeacher(index) {
+            const pending = JSON.parse(localStorage.getItem('pendingTeachers'));
+            const user = pending[index];
+            if (!user) return;
+            
+            const users = JSON.parse(localStorage.getItem('users'));
+            users.push({ 
+                username: user.username, 
+                password: user.password, 
+                role: 'teacher', 
+                approved: true 
+            });
+            localStorage.setItem('users', JSON.stringify(users));
+            
+            pending.splice(index, 1);
+            localStorage.setItem('pendingTeachers', JSON.stringify(pending));
+            
+            loadAdminPanel();
+            alert(`✅ Teacher "${user.username}" has been approved!`);
+        }
+
+        function rejectTeacher(index) {
+            const pending = JSON.parse(localStorage.getItem('pendingTeachers'));
+            const user = pending[index];
+            if (!user) return;
+            
+            if (confirm(`Are you sure you want to reject "${user.username}"?`)) {
+                pending.splice(index, 1);
+                localStorage.setItem('pendingTeachers', JSON.stringify(pending));
+                loadAdminPanel();
+                alert(`❌ Teacher "${user.username}" has been rejected.`);
+            }
+        }
+
+        function revokeTeacher(index) {
+            const users = JSON.parse(localStorage.getItem('users'));
+            const user = users[index];
+            if (!user || user.role !== 'teacher') return;
+            
+            if (confirm(`Are you sure you want to revoke teacher access for "${user.username}"?`)) {
+                user.role = 'student';
+                user.approved = false;
+                localStorage.setItem('users', JSON.stringify(users));
+                loadAdminPanel();
+                alert(`🔴 Teacher access revoked for "${user.username}".`);
+            }
+        }
+
+        function deleteUser(index) {
+            const users = JSON.parse(localStorage.getItem('users'));
+            const user = users[index];
+            if (!user || user.username === 'admin') return;
+            
+            if (confirm(`Are you sure you want to delete "${user.username}"?`)) {
+                users.splice(index, 1);
+                localStorage.setItem('users', JSON.stringify(users));
+                loadAdminPanel();
+                alert(`🗑️ User "${user.username}" has been deleted.`);
+            }
+        }
+
+        // ============================================
         // MAIN APPLICATION
         // ============================================
         
@@ -506,8 +703,15 @@
             document.getElementById('platform').style.display = 'block';
             document.getElementById('welcomeMessage').innerHTML = `Hello ${username}! You are a ${role}.`;
 
+            // Show teacher panel only for approved teachers
             if (role === 'teacher') {
                 document.getElementById('teacher-panel').style.display = 'block';
+            }
+
+            // Show admin panel only for admin user
+            if (username === 'admin') {
+                document.getElementById('adminPanel').style.display = 'block';
+                loadAdminPanel();
             }
 
             let exitBtn = document.getElementById('exitBtn');
