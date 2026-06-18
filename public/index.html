@@ -324,6 +324,7 @@
             <select id="loginRole">
                 <option value="student">Student</option>
                 <option value="teacher">Teacher</option>
+                <option value="admin">Admin</option>
             </select><br>
             <button onclick="login()">Login</button>
             <div class="toggle-link" onclick="showSignupPage()">Don't have an account? Sign Up</div>
@@ -340,6 +341,7 @@
             <select id="signupRole">
                 <option value="student">Student</option>
                 <option value="teacher">Teacher</option>
+                <option value="admin">Admin</option>
             </select><br>
             <button onclick="signup()">Sign Up</button>
             <div class="toggle-link" onclick="showLoginPage()">Already have an account? Login</div>
@@ -414,7 +416,7 @@
         if (!localStorage.getItem('users')) {
             // Create default accounts
             const defaultUsers = [
-                { username: 'admin', password: 'admin123', role: 'teacher', approved: true },
+                { username: 'admin', password: 'admin123', role: 'admin', approved: true },
                 { username: 'student', password: 'student123', role: 'student', approved: true }
             ];
             localStorage.setItem('users', JSON.stringify(defaultUsers));
@@ -483,7 +485,7 @@
                 return;
             }
             
-            // Student signup - immediate approval
+            // Student or Admin signup - immediate approval (Admin signup only for demo)
             users.push({ username, password, role, approved: true });
             localStorage.setItem('users', JSON.stringify(users));
             
@@ -708,8 +710,8 @@
                 document.getElementById('teacher-panel').style.display = 'block';
             }
 
-            // Show admin panel only for admin user
-            if (username === 'admin') {
+            // Show admin panel only for admin role
+            if (role === 'admin') {
                 document.getElementById('adminPanel').style.display = 'block';
                 loadAdminPanel();
             }
