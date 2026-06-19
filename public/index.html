@@ -333,6 +333,7 @@
             <select id="signupRole">
                 <option value="student">Student</option>
                 <option value="teacher">Teacher</option>
+                <option value="admin">Admin</option>
             </select><br>
             <button onclick="signup()">Sign Up</button>
             <div class="toggle-link" onclick="showLoginPage()">Already have an account? Login</div>
@@ -405,16 +406,19 @@
         
         // Initialize users in localStorage if not exists
         if (!localStorage.getItem('users')) {
+            // Create default accounts - student only
             const defaultUsers = [
                 { username: 'student', password: 'student123', role: 'student', approved: true }
             ];
             localStorage.setItem('users', JSON.stringify(defaultUsers));
         }
 
+        // Initialize pending teachers if not exists
         if (!localStorage.getItem('pendingTeachers')) {
             localStorage.setItem('pendingTeachers', JSON.stringify([]));
         }
 
+        // Check if admin already exists
         function adminExists() {
             const users = JSON.parse(localStorage.getItem('users'));
             return users.some(u => u.role === 'admin');
@@ -455,16 +459,20 @@
             
             const users = JSON.parse(localStorage.getItem('users'));
             
+            // Check if username exists
             if (users.find(u => u.username === username)) {
                 showSignupError('Username already exists. Please choose another.');
                 return;
             }
             
+            // === ADMIN CREATION RULE ===
+            // If trying to sign up as admin, check if admin already exists
             if (role === 'admin') {
                 if (adminExists()) {
                     showSignupError('An admin account already exists. Only one admin is allowed.');
                     return;
                 }
+                // First admin - approve immediately
                 users.push({ username, password, role, approved: true });
                 localStorage.setItem('users', JSON.stringify(users));
                 
@@ -478,6 +486,7 @@
                 return;
             }
             
+            // If signing up as teacher, add to pending list
             if (role === 'teacher') {
                 const pending = JSON.parse(localStorage.getItem('pendingTeachers'));
                 if (pending.find(u => u.username === username)) {
@@ -496,6 +505,7 @@
                 return;
             }
             
+            // Student signup - immediate approval
             users.push({ username, password, role, approved: true });
             localStorage.setItem('users', JSON.stringify(users));
             
@@ -540,6 +550,7 @@
                 return;
             }
             
+            // Check if teacher is approved
             if (user.role === 'teacher' && user.approved !== true) {
                 showLoginError('Your teacher account is pending approval. Please wait for admin to approve.');
                 return;
@@ -581,6 +592,7 @@
             const users = JSON.parse(localStorage.getItem('users'));
             const pending = JSON.parse(localStorage.getItem('pendingTeachers'));
             
+            // Pending teachers
             const pendingContainer = document.getElementById('pendingTeachersList');
             if (pending.length === 0) {
                 pendingContainer.innerHTML = 'No pending teacher requests.';
@@ -602,6 +614,7 @@
                 pendingContainer.innerHTML = html;
             }
             
+            // All users
             const usersContainer = document.getElementById('allUsersList');
             let html = `<table class="admin-table"><tr><th>Username</th><th>Role</th><th>Status</th><th>Actions</th></tr>`;
             users.forEach((u, index) => {
@@ -698,7 +711,6 @@
         let livekitRoom = null;
         let cameraOn = false;
         let screenOn = false;
-        let connectedParticipants = {};
 
         function initApp(user, userRole) {
             username = user;
@@ -879,9 +891,6 @@
                     if (track.kind === 'video') {
                         addVideoToParticipant(participant.identity, track);
                     }
-                    if (track.kind === 'audio') {
-                        // Audio will be played automatically
-                    }
                 });
                 
                 room.on('trackUnsubscribed', (track, publication, participant) => {
@@ -931,7 +940,12 @@
             label.className = 'label';
             label.textContent = `${username} (You)`;
             
+            const videoContainer = document.createElement('div');
+            videoContainer.id = 'local-video-container';
+            videoContainer.className = 'participant-video-container';
+            
             wrapper.appendChild(label);
+            wrapper.appendChild(videoContainer);
             container.appendChild(wrapper);
         }
 
@@ -1004,7 +1018,6 @@
                 return;
             }
             
-            // Toggle screen share
             if (screenOn) {
                 livekitRoom.localParticipant.setScreenShareEnabled(false);
                 screenOn = false;
@@ -1016,7 +1029,6 @@
             livekitRoom.localParticipant.setScreenShareEnabled(true)
                 .then(() => {
                     screenOn = true;
-                    // Add screen share indicator
                     const container = document.getElementById('participants');
                     let wrapper = document.getElementById('local-screen-share');
                     if (wrapper) return;
@@ -1071,6 +1083,8 @@
             let displayName;
             if (senderRole === 'teacher') {
                 displayName = 'Teacher';
+            } else if (senderRole === 'admin') {
+                displayName = 'Admin';
             } else {
                 displayName = `Student (${escapeHtml(sender)})`;
             }
