@@ -168,42 +168,34 @@
             justify-content: center;
             margin: 20px 0;
         }
-        .video-container {
-            background: black;
+        .participant-wrapper {
+            background: rgba(255,255,255,0.9);
             border-radius: 16px;
-            padding: 8px;
+            padding: 12px;
             width: 360px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.2);
             position: relative;
         }
-        .video-container video {
+        .participant-video {
             width: 100%;
             border-radius: 12px;
             background: #000;
             aspect-ratio: 16/9;
             object-fit: cover;
         }
-        .video-container .label {
-            position: absolute;
-            bottom: 15px;
-            left: 15px;
-            background: rgba(0,0,0,0.6);
-            color: white;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
+        .participant-wrapper .label {
+            margin-top: 8px;
             font-weight: bold;
-            z-index: 5;
+            text-align: center;
+            color: #333;
         }
-        .video-controls {
-            position: absolute;
-            bottom: 15px;
-            right: 15px;
+        .participant-controls {
             display: flex;
+            justify-content: center;
             gap: 8px;
-            z-index: 5;
+            margin-top: 8px;
         }
-        .video-controls button, .video-controls input {
+        .participant-controls button, .participant-controls input {
             padding: 5px 10px;
             font-size: 11px;
             background: rgba(0,0,0,0.6);
@@ -212,9 +204,9 @@
             color: white;
             cursor: pointer;
         }
-        .video-controls input { width: 70px; }
+        .participant-controls input { width: 70px; }
 
-        .video-container.expanded {
+        .participant-wrapper.expanded {
             position: fixed !important;
             top: 0 !important;
             left: 0 !important;
@@ -232,26 +224,27 @@
             align-items: center !important;
             justify-content: center !important;
         }
-        .video-container.expanded video {
+        .participant-wrapper.expanded video {
             width: 100% !important;
             height: 100% !important;
             object-fit: contain !important;
             border-radius: 0 !important;
         }
-        .video-container.expanded .label {
+        .participant-wrapper.expanded .label {
             position: fixed;
             bottom: 20px;
             left: 20px;
             background: rgba(0,0,0,0.7);
             font-size: 16px;
             padding: 8px 16px;
+            color: white;
         }
-        .video-container.expanded .video-controls {
+        .participant-wrapper.expanded .participant-controls {
             position: fixed;
             bottom: 20px;
             right: 20px;
         }
-        .video-container.expanded .expand-close {
+        .participant-wrapper.expanded .expand-close {
             position: fixed;
             top: 20px;
             right: 20px;
@@ -310,7 +303,6 @@
             z-index: 1000;
             display: none;
         }
-        .screen-share { border: 2px solid #ff9800 !important; }
     </style>
 </head>
 <body>
@@ -341,7 +333,6 @@
             <select id="signupRole">
                 <option value="student">Student</option>
                 <option value="teacher">Teacher</option>
-                <option value="admin">Admin</option>
             </select><br>
             <button onclick="signup()">Sign Up</button>
             <div class="toggle-link" onclick="showLoginPage()">Already have an account? Login</div>
@@ -398,14 +389,14 @@
         </div>
         <div style="text-align: center; margin: 20px;">
             <button onclick="startCamera()">📷 Start My Camera</button>
-            <button onclick="startScreenShare()" id="shareScreenBtn">🖥️ Share Screen</button>
+            <button onclick="shareScreen()">🖥️ Share Screen</button>
             <button onclick="raiseHand()">✋ Raise Hand</button>
             <button id="exitBtn">Leave Class</button>
         </div>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
-    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/livekit-client@2/dist/livekit-client.js"></script>
 
     <script>
         // ============================================
@@ -414,17 +405,19 @@
         
         // Initialize users in localStorage if not exists
         if (!localStorage.getItem('users')) {
-            // Create default accounts
             const defaultUsers = [
-                { username: 'admin', password: 'admin123', role: 'admin', approved: true },
                 { username: 'student', password: 'student123', role: 'student', approved: true }
             ];
             localStorage.setItem('users', JSON.stringify(defaultUsers));
         }
 
-        // Initialize pending teachers if not exists
         if (!localStorage.getItem('pendingTeachers')) {
             localStorage.setItem('pendingTeachers', JSON.stringify([]));
+        }
+
+        function adminExists() {
+            const users = JSON.parse(localStorage.getItem('users'));
+            return users.some(u => u.role === 'admin');
         }
 
         function showSignupPage() {
@@ -461,12 +454,30 @@
             }
             
             const users = JSON.parse(localStorage.getItem('users'));
+            
             if (users.find(u => u.username === username)) {
                 showSignupError('Username already exists. Please choose another.');
                 return;
             }
             
-            // If signing up as teacher, add to pending list instead of approving immediately
+            if (role === 'admin') {
+                if (adminExists()) {
+                    showSignupError('An admin account already exists. Only one admin is allowed.');
+                    return;
+                }
+                users.push({ username, password, role, approved: true });
+                localStorage.setItem('users', JSON.stringify(users));
+                
+                document.getElementById('signupSuccess').innerText = 'Admin account created successfully! Please login.';
+                document.getElementById('signupSuccess').style.display = 'block';
+                
+                setTimeout(() => {
+                    showLoginPage();
+                    document.getElementById('loginUsername').value = username;
+                }, 1500);
+                return;
+            }
+            
             if (role === 'teacher') {
                 const pending = JSON.parse(localStorage.getItem('pendingTeachers'));
                 if (pending.find(u => u.username === username)) {
@@ -485,7 +496,6 @@
                 return;
             }
             
-            // Student or Admin signup - immediate approval (Admin signup only for demo)
             users.push({ username, password, role, approved: true });
             localStorage.setItem('users', JSON.stringify(users));
             
@@ -530,7 +540,6 @@
                 return;
             }
             
-            // Check if teacher is approved
             if (user.role === 'teacher' && user.approved !== true) {
                 showLoginError('Your teacher account is pending approval. Please wait for admin to approve.');
                 return;
@@ -572,7 +581,6 @@
             const users = JSON.parse(localStorage.getItem('users'));
             const pending = JSON.parse(localStorage.getItem('pendingTeachers'));
             
-            // Pending teachers
             const pendingContainer = document.getElementById('pendingTeachersList');
             if (pending.length === 0) {
                 pendingContainer.innerHTML = 'No pending teacher requests.';
@@ -594,7 +602,6 @@
                 pendingContainer.innerHTML = html;
             }
             
-            // All users
             const usersContainer = document.getElementById('allUsersList');
             let html = `<table class="admin-table"><tr><th>Username</th><th>Role</th><th>Status</th><th>Actions</th></tr>`;
             users.forEach((u, index) => {
@@ -688,13 +695,10 @@
         
         let socket = io();
         let username = "", role = "", roomCode = null;
-        let localStream = null, screenStream = null;
-        let peer = null, myPeerId = null;
-        let connectedPeers = {};
-        let peerUserInfo = {};
-        let cameraOn = false, screenOn = false;
-        let pendingCalls = [];
-        let processedMessages = new Set();
+        let livekitRoom = null;
+        let cameraOn = false;
+        let screenOn = false;
+        let connectedParticipants = {};
 
         function initApp(user, userRole) {
             username = user;
@@ -705,12 +709,10 @@
             document.getElementById('platform').style.display = 'block';
             document.getElementById('welcomeMessage').innerHTML = `Hello ${username}! You are a ${role}.`;
 
-            // Show teacher panel only for approved teachers
             if (role === 'teacher') {
                 document.getElementById('teacher-panel').style.display = 'block';
             }
 
-            // Show admin panel only for admin role
             if (role === 'admin') {
                 document.getElementById('adminPanel').style.display = 'block';
                 loadAdminPanel();
@@ -738,7 +740,7 @@
         }
 
         // ============================================
-        // SOCKET & PEERJS
+        // SOCKET & ROOM MANAGEMENT
         // ============================================
         
         function showError(msg) {
@@ -763,17 +765,6 @@
 
         function isMobile() {
             return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-        }
-
-        function requestFullscreen(element) {
-            if (element.requestFullscreen) element.requestFullscreen();
-            else if (element.webkitRequestFullscreen) element.webkitRequestFullscreen();
-            else if (element.msRequestFullscreen) element.msRequestFullscreen();
-        }
-
-        function exitFullscreen() {
-            if (document.exitFullscreen) document.exitFullscreen();
-            else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
         }
 
         function addSystemMessage(text) {
@@ -813,7 +804,6 @@
             document.getElementById('platform').style.display = 'none';
             document.getElementById('classroom').style.display = 'block';
             addSystemMessage(`🎉 ${escapeHtml(username)} (Teacher) created this class`);
-            initPeer();
         });
 
         function joinRoom(code) {
@@ -826,7 +816,6 @@
             document.getElementById('platform').style.display = 'none';
             document.getElementById('classroom').style.display = 'block';
             addSystemMessage(`👋 ${escapeHtml(username)} (${role === 'teacher' ? 'Teacher' : 'Student'}) joined the class`);
-            initPeer();
         });
 
         socket.on('user-joined', (data) => {
@@ -837,9 +826,7 @@
 
         socket.on('user-left', (data) => {
             addSystemMessage(`👋 ${escapeHtml(data.username)} (${data.role === 'teacher' ? 'Teacher' : 'Student'}) left the class`);
-            if (data.peerId) {
-                removeAllVideosForPeer(data.peerId);
-            }
+            removeParticipantFromUI(data.username);
         });
 
         socket.on('room-closed', () => {
@@ -849,413 +836,210 @@
             }, 2000);
         });
 
-        function removeAllVideosForPeer(peerId) {
-            let cameraEl = document.getElementById(`video-${peerId}-camera`);
-            if (cameraEl) cameraEl.remove();
-            let screenEl = document.getElementById(`video-${peerId}-screen`);
-            if (screenEl) screenEl.remove();
-            delete connectedPeers[peerId];
-            delete peerUserInfo[peerId];
-        }
-
-        function initPeer() {
-            console.log('Initializing PeerJS...');
-            peer = new Peer(undefined, {
-                host: '0.peerjs.com',
-                port: 443,
-                secure: true,
-                config: {
-                    iceServers: [
-                        { urls: 'stun:stun.l.google.com:19302' },
-                        { urls: 'stun:stun1.l.google.com:19302' },
-                        { urls: 'stun:stun2.l.google.com:19302' }
-                    ]
-                }
-            });
-
-            peer.on('open', (id) => {
-                myPeerId = id;
-                console.log('My Peer ID:', id);
-                socket.emit('share-peer-id', { roomCode, peerId: id });
+        // ============================================
+        // LIVEKIT VIDEO FUNCTIONS
+        // ============================================
+        
+        async function startCamera() {
+            if (cameraOn) {
+                alert('Camera already active');
+                return;
+            }
+            
+            try {
+                // Request token from server
+                const response = await new Promise((resolve) => {
+                    socket.emit('get-livekit-token', {
+                        roomName: roomCode || 'default-room',
+                        username: username,
+                        role: role
+                    }, resolve);
+                });
                 
-                pendingCalls.forEach(p => {
-                    if (p.type === 'camera' && localStream) {
-                        p.call.answer(localStream);
-                        handleCall(p.call, 'camera');
-                    } else if (p.type === 'screen' && screenStream) {
-                        p.call.answer(screenStream);
-                        handleCall(p.call, 'screen');
+                if (response.error) {
+                    showError('Failed to get token: ' + response.error);
+                    return;
+                }
+                
+                // Connect to LiveKit
+                const room = new Room();
+                
+                room.on('participantConnected', (participant) => {
+                    console.log('Participant connected:', participant.identity);
+                    addParticipantToUI(participant);
+                });
+                
+                room.on('participantDisconnected', (participant) => {
+                    console.log('Participant disconnected:', participant.identity);
+                    removeParticipantFromUI(participant.identity);
+                });
+                
+                room.on('trackSubscribed', (track, publication, participant) => {
+                    console.log('Track subscribed:', track.kind, participant.identity);
+                    if (track.kind === 'video') {
+                        addVideoToParticipant(participant.identity, track);
+                    }
+                    if (track.kind === 'audio') {
+                        // Audio will be played automatically
                     }
                 });
-                pendingCalls = [];
-            });
-
-            peer.on('call', (call) => {
-                console.log('Incoming call from', call.peer);
-                let type = call.metadata?.type || 'camera';
                 
-                if (type === 'screen' && screenStream) {
-                    call.answer(screenStream);
-                    handleCall(call, 'screen');
-                } else if (type === 'camera' && localStream) {
-                    call.answer(localStream);
-                    handleCall(call, 'camera');
-                } else {
-                    pendingCalls.push({ call, type });
-                }
-            });
-
-            peer.on('error', (err) => console.error('Peer error:', err));
-        }
-
-        socket.on('new-peer', ({ peerId }) => {
-            console.log('New peer joined:', peerId);
-            const conn = peer.connect(peerId);
-            conn.on('open', () => {
-                conn.send({ type: 'info', username, role });
-            });
-            conn.on('data', (data) => {
-                if (data.type === 'info') {
-                    peerUserInfo[peerId] = { username: data.username, role: data.role };
-                    updateVideoLabel(peerId);
-                }
-            });
-            
-            setTimeout(() => {
-                if (localStream) {
-                    let call = peer.call(peerId, localStream);
-                    handleCall(call, 'camera');
-                }
-                if (screenStream) {
-                    let call = peer.call(peerId, screenStream, { metadata: { type: 'screen' } });
-                    handleCall(call, 'screen');
-                }
-            }, 1000);
-        });
-
-        function updateVideoLabel(peerId) {
-            let info = peerUserInfo[peerId];
-            if (!info) return;
-            
-            let displayName = info.role === 'teacher' ? 'Teacher' : `Student (${escapeHtml(info.username)})`;
-            
-            let cameraEl = document.getElementById(`video-${peerId}-camera`);
-            if (cameraEl) {
-                let label = cameraEl.querySelector('.label');
-                if (label) label.innerText = displayName;
-            }
-            let screenEl = document.getElementById(`video-${peerId}-screen`);
-            if (screenEl) {
-                let label = screenEl.querySelector('.label');
-                if (label) label.innerText = `${displayName} (Screen)`;
+                room.on('trackUnsubscribed', (track, publication, participant) => {
+                    console.log('Track unsubscribed:', track.kind, participant.identity);
+                    if (track.kind === 'video') {
+                        removeVideoFromParticipant(participant.identity);
+                    }
+                });
+                
+                room.on('connected', () => {
+                    console.log('Connected to LiveKit');
+                    cameraOn = true;
+                    addLocalVideoUI();
+                });
+                
+                room.on('disconnected', () => {
+                    console.log('Disconnected from LiveKit');
+                    cameraOn = false;
+                });
+                
+                await room.connect(response.wsUrl, response.token);
+                
+                // Publish camera and microphone
+                await room.localParticipant.setCameraEnabled(true);
+                await room.localParticipant.setMicrophoneEnabled(true);
+                
+                livekitRoom = room;
+                
+            } catch (error) {
+                console.error('LiveKit error:', error);
+                showError('Camera error: ' + error.message);
+                cameraOn = false;
             }
         }
 
-        function handleCall(call, type) {
-            call.on('stream', (stream) => {
-                console.log(`Received ${type} stream from`, call.peer);
-                addVideo(call.peer, stream, type);
-            });
-            call.on('close', () => {
-                console.log(`Call closed from`, call.peer);
-                removeAllVideosForPeer(call.peer);
-            });
-            connectedPeers[call.peer] = { call, type };
+        function addLocalVideoUI() {
+            // Show local video indicator
+            const container = document.getElementById('participants');
+            let wrapper = document.getElementById('local-video-wrapper');
+            if (wrapper) return;
+            
+            wrapper = document.createElement('div');
+            wrapper.className = 'participant-wrapper';
+            wrapper.id = 'local-video-wrapper';
+            
+            const label = document.createElement('div');
+            label.className = 'label';
+            label.textContent = `${username} (You)`;
+            
+            wrapper.appendChild(label);
+            container.appendChild(wrapper);
         }
 
-        function addVideo(peerId, stream, type) {
-            let container = document.getElementById('participants');
-            let existing = document.getElementById(`video-${peerId}-${type}`);
-            if (existing) return;
+        function addParticipantToUI(participant) {
+            const container = document.getElementById('participants');
+            let wrapper = document.getElementById(`participant-${participant.identity}`);
+            if (wrapper) return;
+            
+            wrapper = document.createElement('div');
+            wrapper.className = 'participant-wrapper';
+            wrapper.id = `participant-${participant.identity}`;
+            
+            const label = document.createElement('div');
+            label.className = 'label';
+            label.textContent = participant.identity;
+            
+            const videoContainer = document.createElement('div');
+            videoContainer.id = `video-${participant.identity}`;
+            videoContainer.className = 'participant-video-container';
+            
+            wrapper.appendChild(label);
+            wrapper.appendChild(videoContainer);
+            container.appendChild(wrapper);
+        }
 
-            let div = document.createElement('div');
-            div.className = 'video-container';
-            div.id = `video-${peerId}-${type}`;
-
-            let video = document.createElement('video');
-            video.srcObject = stream;
+        function addVideoToParticipant(identity, track) {
+            const videoContainer = document.getElementById(`video-${identity}`);
+            if (!videoContainer) return;
+            
+            // Check if video already exists
+            if (videoContainer.querySelector('video')) return;
+            
+            const video = document.createElement('video');
+            video.srcObject = new MediaStream([track.mediaStreamTrack]);
             video.autoplay = true;
             video.playsInline = true;
-            if (type === 'screen') video.classList.add('screen-share');
+            video.className = 'participant-video';
+            video.onclick = () => {
+                const wrapper = video.closest('.participant-wrapper');
+                if (wrapper) {
+                    document.querySelectorAll('.participant-wrapper.expanded').forEach(w => w.classList.remove('expanded'));
+                    wrapper.classList.toggle('expanded');
+                }
+            };
+            
+            videoContainer.appendChild(video);
+        }
 
-            let info = peerUserInfo[peerId];
-            let displayName = 'Participant';
-            if (info) {
-                displayName = info.role === 'teacher' ? 'Teacher' : `Student (${escapeHtml(info.username)})`;
+        function removeVideoFromParticipant(identity) {
+            const videoContainer = document.getElementById(`video-${identity}`);
+            if (videoContainer) {
+                const video = videoContainer.querySelector('video');
+                if (video) video.remove();
             }
-            if (type === 'screen') displayName = `${displayName} (Screen)`;
-
-            let label = document.createElement('div');
-            label.className = 'label';
-            label.innerText = displayName;
-
-            let controls = document.createElement('div');
-            controls.className = 'video-controls';
-            
-            let muteBtn = document.createElement('button');
-            muteBtn.innerText = '🔊 Mute';
-            muteBtn.onclick = (e) => {
-                e.stopPropagation();
-                let audio = stream.getAudioTracks()[0];
-                if (audio) {
-                    audio.enabled = !audio.enabled;
-                    muteBtn.innerText = audio.enabled ? '🔊 Mute' : '🔇 Unmute';
-                }
-            };
-            
-            let volSlider = document.createElement('input');
-            volSlider.type = 'range';
-            volSlider.min = 0;
-            volSlider.max = 1;
-            volSlider.step = 0.05;
-            volSlider.value = 1;
-            volSlider.style.width = '70px';
-            volSlider.oninput = (e) => {
-                e.stopPropagation();
-                video.volume = parseFloat(volSlider.value);
-            };
-            
-            let expandBtn = document.createElement('button');
-            expandBtn.innerText = '🔍 Expand';
-            expandBtn.onclick = (e) => {
-                e.stopPropagation();
-                document.querySelectorAll('.video-container.expanded').forEach(v => v.classList.remove('expanded'));
-                div.classList.add('expanded');
-                if (isMobile()) {
-                    requestFullscreen(div);
-                }
-            };
-            
-            controls.appendChild(muteBtn);
-            controls.appendChild(volSlider);
-            controls.appendChild(expandBtn);
-            
-            let closeBtn = document.createElement('button');
-            closeBtn.className = 'expand-close';
-            closeBtn.innerHTML = '✕';
-            closeBtn.onclick = (e) => {
-                e.stopPropagation();
-                div.classList.remove('expanded');
-                if (isMobile()) {
-                    exitFullscreen();
-                }
-            };
-            
-            div.appendChild(video);
-            div.appendChild(label);
-            div.appendChild(controls);
-            div.appendChild(closeBtn);
-            container.appendChild(div);
         }
 
-        function startCamera() {
-            if (cameraOn) return alert('Camera already active');
-            
-            navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-                .then(stream => {
-                    localStream = stream;
-                    cameraOn = true;
-                    
-                    let container = document.getElementById('participants');
-                    let existing = document.getElementById('local-video');
-                    if (existing) existing.remove();
-                    
-                    let div = document.createElement('div');
-                    div.className = 'video-container';
-                    div.id = 'local-video';
-                    
-                    let video = document.createElement('video');
-                    video.srcObject = stream;
-                    video.autoplay = true;
-                    video.muted = true;
-                    video.playsInline = true;
-                    
-                    let label = document.createElement('div');
-                    label.className = 'label';
-                    label.innerText = `${escapeHtml(username)} (You)`;
-                    
-                    let controls = document.createElement('div');
-                    controls.className = 'video-controls';
-                    
-                    let muteBtn = document.createElement('button');
-                    muteBtn.innerText = '🔊 Mute Mic';
-                    muteBtn.onclick = () => {
-                        let audio = stream.getAudioTracks()[0];
-                        if (audio) {
-                            audio.enabled = !audio.enabled;
-                            muteBtn.innerText = audio.enabled ? '🔊 Mute Mic' : '🔇 Unmute Mic';
-                        }
-                    };
-                    
-                    let volSlider = document.createElement('input');
-                    volSlider.type = 'range';
-                    volSlider.min = 0;
-                    volSlider.max = 1;
-                    volSlider.step = 0.05;
-                    volSlider.value = 1;
-                    volSlider.oninput = () => video.volume = parseFloat(volSlider.value);
-                    
-                    let expandBtn = document.createElement('button');
-                    expandBtn.innerText = '🔍 Expand';
-                    expandBtn.onclick = () => {
-                        div.classList.toggle('expanded');
-                        if (isMobile() && div.classList.contains('expanded')) {
-                            requestFullscreen(div);
-                        } else if (!div.classList.contains('expanded')) {
-                            exitFullscreen();
-                        }
-                    };
-                    
-                    controls.appendChild(muteBtn);
-                    controls.appendChild(volSlider);
-                    controls.appendChild(expandBtn);
-                    
-                    let closeBtn = document.createElement('button');
-                    closeBtn.className = 'expand-close';
-                    closeBtn.innerHTML = '✕';
-                    closeBtn.onclick = () => {
-                        div.classList.remove('expanded');
-                        if (isMobile()) exitFullscreen();
-                    };
-                    
-                    div.appendChild(video);
-                    div.appendChild(label);
-                    div.appendChild(controls);
-                    div.appendChild(closeBtn);
-                    container.appendChild(div);
-                    
-                    Object.keys(connectedPeers).forEach(pid => {
-                        let call = peer.call(pid, stream);
-                        handleCall(call, 'camera');
-                    });
-                    
-                    for (let i = 0; i < pendingCalls.length; i++) {
-                        if (pendingCalls[i].type === 'camera') {
-                            pendingCalls[i].call.answer(stream);
-                            handleCall(pendingCalls[i].call, 'camera');
-                            pendingCalls.splice(i, 1);
-                            i--;
-                        }
-                    }
-                })
-                .catch(err => showError('Camera error: ' + err.message));
+        function removeParticipantFromUI(identity) {
+            const wrapper = document.getElementById(`participant-${identity}`);
+            if (wrapper) wrapper.remove();
         }
 
-        function startScreenShare() {
+        function shareScreen() {
             if (isMobile()) {
                 alert("Screen sharing is not supported on mobile devices. Please use a laptop.");
                 return;
             }
             
-            if (screenOn) {
-                stopScreenShare();
+            if (!livekitRoom) {
+                alert('Please start your camera first');
                 return;
             }
             
-            navigator.mediaDevices.getDisplayMedia({ video: true, audio: false })
-                .then(stream => {
-                    screenStream = stream;
-                    screenOn = true;
-                    
-                    let shareBtn = document.getElementById('shareScreenBtn');
-                    shareBtn.innerText = '⏹️ Stop Sharing';
-                    shareBtn.style.background = '#d32f2f';
-                    
-                    let container = document.getElementById('participants');
-                    let existing = document.getElementById('local-screen');
-                    if (existing) existing.remove();
-                    
-                    let div = document.createElement('div');
-                    div.className = 'video-container';
-                    div.id = 'local-screen';
-                    
-                    let video = document.createElement('video');
-                    video.srcObject = stream;
-                    video.autoplay = true;
-                    video.playsInline = true;
-                    video.classList.add('screen-share');
-                    
-                    let label = document.createElement('div');
-                    label.className = 'label';
-                    label.innerText = `${escapeHtml(username)} (Screen - You)`;
-                    
-                    let controls = document.createElement('div');
-                    controls.className = 'video-controls';
-                    
-                    let stopBtn = document.createElement('button');
-                    stopBtn.innerText = '⏹️ Stop';
-                    stopBtn.style.background = '#d32f2f';
-                    stopBtn.onclick = () => stopScreenShare();
-                    
-                    let expandBtn = document.createElement('button');
-                    expandBtn.innerText = '🔍 Expand';
-                    expandBtn.onclick = () => {
-                        div.classList.toggle('expanded');
-                        if (isMobile() && div.classList.contains('expanded')) {
-                            requestFullscreen(div);
-                        } else if (!div.classList.contains('expanded')) {
-                            exitFullscreen();
-                        }
-                    };
-                    
-                    controls.appendChild(stopBtn);
-                    controls.appendChild(expandBtn);
-                    
-                    let closeBtn = document.createElement('button');
-                    closeBtn.className = 'expand-close';
-                    closeBtn.innerHTML = '✕';
-                    closeBtn.onclick = () => {
-                        div.classList.remove('expanded');
-                        if (isMobile()) exitFullscreen();
-                    };
-                    
-                    div.appendChild(video);
-                    div.appendChild(label);
-                    div.appendChild(controls);
-                    div.appendChild(closeBtn);
-                    container.appendChild(div);
-                    
-                    Object.keys(connectedPeers).forEach(pid => {
-                        let call = peer.call(pid, stream, { metadata: { type: 'screen' } });
-                        handleCall(call, 'screen');
-                    });
-                    
-                    for (let i = 0; i < pendingCalls.length; i++) {
-                        if (pendingCalls[i].type === 'screen') {
-                            pendingCalls[i].call.answer(stream);
-                            handleCall(pendingCalls[i].call, 'screen');
-                            pendingCalls.splice(i, 1);
-                            i--;
-                        }
-                    }
-                    
-                    stream.getVideoTracks()[0].onended = () => stopScreenShare();
-                })
-                .catch(err => showError('Screen share failed: ' + err.message));
-        }
-
-        function stopScreenShare() {
-            if (screenStream) {
-                screenStream.getTracks().forEach(t => t.stop());
-                screenStream = null;
+            // Toggle screen share
+            if (screenOn) {
+                livekitRoom.localParticipant.setScreenShareEnabled(false);
+                screenOn = false;
+                const wrapper = document.getElementById('local-screen-share');
+                if (wrapper) wrapper.remove();
+                return;
             }
-            screenOn = false;
             
-            let shareBtn = document.getElementById('shareScreenBtn');
-            shareBtn.innerText = '🖥️ Share Screen';
-            shareBtn.style.background = '';
-            
-            let el = document.getElementById('local-screen');
-            if (el) el.remove();
-            
-            Object.keys(connectedPeers).forEach(pid => {
-                if (connectedPeers[pid] && connectedPeers[pid].type === 'screen') {
-                    connectedPeers[pid].call.close();
-                    delete connectedPeers[pid];
-                }
-            });
+            livekitRoom.localParticipant.setScreenShareEnabled(true)
+                .then(() => {
+                    screenOn = true;
+                    // Add screen share indicator
+                    const container = document.getElementById('participants');
+                    let wrapper = document.getElementById('local-screen-share');
+                    if (wrapper) return;
+                    
+                    wrapper = document.createElement('div');
+                    wrapper.className = 'participant-wrapper';
+                    wrapper.id = 'local-screen-share';
+                    
+                    const label = document.createElement('div');
+                    label.className = 'label';
+                    label.textContent = `${username} (Screen Share - You)`;
+                    
+                    wrapper.appendChild(label);
+                    container.appendChild(wrapper);
+                })
+                .catch(err => {
+                    showError('Screen share failed: ' + err.message);
+                });
         }
 
+        // ============================================
+        // CHAT
+        // ============================================
         function sendMessage() {
             let input = document.getElementById('chat-input');
             let text = input.value.trim();
@@ -1271,17 +1055,15 @@
                 messageId: messageId
             });
             
+            addChatMessageToUI(username, text, role);
             input.value = '';
         }
 
         socket.on('chat', (data) => {
-            if (processedMessages.has(data.messageId)) return;
-            processedMessages.add(data.messageId);
-            addChatMessageToUI(data.username, data.message, data.role, data.messageId);
-            setTimeout(() => processedMessages.delete(data.messageId), 500);
+            addChatMessageToUI(data.username, data.message, data.role);
         });
 
-        function addChatMessageToUI(sender, text, senderRole, messageId) {
+        function addChatMessageToUI(sender, text, senderRole) {
             let container = document.getElementById('messages');
             let msg = document.createElement('div');
             msg.className = `message ${senderRole}`;
@@ -1300,48 +1082,37 @@
 
         function raiseHand() {
             if (!roomCode) return;
-            let messageId = Date.now() + '-' + Math.random() + '-' + username;
-            socket.emit('raise-hand', { roomCode, username, role: role, messageId: messageId });
+            socket.emit('raise-hand', { roomCode, username, role: role });
+            addChatMessageToUI(username, 'raised hand ✋', role);
+            
+            let alert = document.getElementById('hand-raise-alert');
+            alert.textContent = `✋ ${escapeHtml(username)} raised their hand!`;
+            alert.style.display = 'block';
+            setTimeout(() => alert.style.display = 'none', 5000);
         }
 
         socket.on('hand-raised', (data) => {
-            if (processedMessages.has(data.messageId)) return;
-            processedMessages.add(data.messageId);
-            setTimeout(() => processedMessages.delete(data.messageId), 500);
-            
-            addChatMessageToUI(data.username, 'raised hand ✋', data.role, data.messageId);
-            
-            let alert = document.getElementById('hand-raise-alert');
-            alert.innerText = `✋ ${escapeHtml(data.username)} raised their hand!`;
-            alert.style.display = 'block';
-            setTimeout(() => alert.style.display = 'none', 5000);
+            addChatMessageToUI(data.username, 'raised hand ✋', data.role);
         });
 
+        // ============================================
+        // EXIT FUNCTIONS
+        // ============================================
         function leaveRoom() {
-            if (localStream) localStream.getTracks().forEach(t => t.stop());
-            if (screenStream) screenStream.getTracks().forEach(t => t.stop());
-            if (peer) peer.destroy();
+            if (livekitRoom) {
+                livekitRoom.disconnect();
+                livekitRoom = null;
+            }
+            cameraOn = false;
+            screenOn = false;
             
-            socket.emit('leave-room', { roomCode, username, role, peerId: myPeerId });
+            socket.emit('leave-room', { roomCode, username, role });
             
             document.getElementById('participants').innerHTML = '';
             document.getElementById('messages').innerHTML = '';
             document.getElementById('classroom').style.display = 'none';
             document.getElementById('platform').style.display = 'block';
-            
-            cameraOn = false;
-            screenOn = false;
-            connectedPeers = {};
-            peerUserInfo = {};
             roomCode = null;
-            processedMessages.clear();
-            
-            let shareBtn = document.getElementById('shareScreenBtn');
-            if (shareBtn) {
-                shareBtn.innerText = '🖥️ Share Screen';
-                shareBtn.style.background = '';
-            }
-            if (isMobile()) exitFullscreen();
             
             if (role === 'teacher') {
                 socket.emit('get-rooms');
