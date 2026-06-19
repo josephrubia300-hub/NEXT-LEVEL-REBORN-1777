@@ -8,7 +8,6 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Arial, sans-serif; background: #eef1f7; }
 
-        /* === LOGIN PAGE BACKGROUND (Image 1) === */
         #loginPage, #signupPage {
             min-height: 100vh;
             display: flex;
@@ -71,7 +70,6 @@
             display: none;
         }
 
-        /* === DASHBOARD FULL PAGE BACKGROUND (Image 2) === */
         .dashboard { 
             padding: 20px; 
             max-width: 1400px; 
@@ -121,7 +119,6 @@
             border-radius: 8px;
         }
 
-        /* === ADMIN PANEL === */
         #adminPanel {
             display: none;
             background: rgba(255, 255, 255, 0.95);
@@ -153,7 +150,6 @@
             margin: 2px;
         }
 
-        /* === CLASSROOM BACKGROUND (Image 3) === */
         #classroom { 
             display: none; 
             padding: 20px; 
@@ -311,8 +307,8 @@
     <div id="loginPage">
         <div class="login-box">
             <h2>🎓 Next Level Academy</h2>
-            <input type="text" id="loginUsername" placeholder="Username"><br>
-            <input type="password" id="loginPassword" placeholder="Password"><br>
+            <input type="text" id="loginUsername" placeholder="Username" value="student"><br>
+            <input type="password" id="loginPassword" placeholder="Password" value="student123"><br>
             <select id="loginRole">
                 <option value="student">Student</option>
                 <option value="teacher">Teacher</option>
@@ -358,8 +354,6 @@
                     <button onclick="createRoom()">Start Lesson</button>
                 </div>
             </div>
-
-            <!-- ADMIN PANEL -->
             <div id="adminPanel">
                 <h3>🔐 Admin Dashboard</h3>
                 <div id="pendingTeachersSection">
@@ -371,7 +365,6 @@
                     <div id="allUsersList"></div>
                 </div>
             </div>
-
             <div class="toggle-link" onclick="logout()">🚪 Logout</div>
         </div>
     </div>
@@ -397,7 +390,7 @@
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/livekit-client@2/dist/livekit-client.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/livekit-client@1.0.0/dist/livekit-client.umd.min.js"></script>
 
     <script>
         // ============================================
@@ -406,19 +399,16 @@
         
         // Initialize users in localStorage if not exists
         if (!localStorage.getItem('users')) {
-            // Create default accounts - student only
             const defaultUsers = [
                 { username: 'student', password: 'student123', role: 'student', approved: true }
             ];
             localStorage.setItem('users', JSON.stringify(defaultUsers));
         }
 
-        // Initialize pending teachers if not exists
         if (!localStorage.getItem('pendingTeachers')) {
             localStorage.setItem('pendingTeachers', JSON.stringify([]));
         }
 
-        // Check if admin already exists
         function adminExists() {
             const users = JSON.parse(localStorage.getItem('users'));
             return users.some(u => u.role === 'admin');
@@ -459,20 +449,16 @@
             
             const users = JSON.parse(localStorage.getItem('users'));
             
-            // Check if username exists
             if (users.find(u => u.username === username)) {
                 showSignupError('Username already exists. Please choose another.');
                 return;
             }
             
-            // === ADMIN CREATION RULE ===
-            // If trying to sign up as admin, check if admin already exists
             if (role === 'admin') {
                 if (adminExists()) {
                     showSignupError('An admin account already exists. Only one admin is allowed.');
                     return;
                 }
-                // First admin - approve immediately
                 users.push({ username, password, role, approved: true });
                 localStorage.setItem('users', JSON.stringify(users));
                 
@@ -486,7 +472,6 @@
                 return;
             }
             
-            // If signing up as teacher, add to pending list
             if (role === 'teacher') {
                 const pending = JSON.parse(localStorage.getItem('pendingTeachers'));
                 if (pending.find(u => u.username === username)) {
@@ -505,7 +490,6 @@
                 return;
             }
             
-            // Student signup - immediate approval
             users.push({ username, password, role, approved: true });
             localStorage.setItem('users', JSON.stringify(users));
             
@@ -550,7 +534,6 @@
                 return;
             }
             
-            // Check if teacher is approved
             if (user.role === 'teacher' && user.approved !== true) {
                 showLoginError('Your teacher account is pending approval. Please wait for admin to approve.');
                 return;
@@ -584,15 +567,10 @@
             return false;
         }
 
-        // ============================================
-        // ADMIN FUNCTIONS
-        // ============================================
-        
         function loadAdminPanel() {
             const users = JSON.parse(localStorage.getItem('users'));
             const pending = JSON.parse(localStorage.getItem('pendingTeachers'));
             
-            // Pending teachers
             const pendingContainer = document.getElementById('pendingTeachersList');
             if (pending.length === 0) {
                 pendingContainer.innerHTML = 'No pending teacher requests.';
@@ -614,7 +592,6 @@
                 pendingContainer.innerHTML = html;
             }
             
-            // All users
             const usersContainer = document.getElementById('allUsersList');
             let html = `<table class="admin-table"><tr><th>Username</th><th>Role</th><th>Status</th><th>Actions</th></tr>`;
             users.forEach((u, index) => {
@@ -744,6 +721,7 @@
             socket.emit('get-rooms');
         }
 
+        // Check if user is already logged in
         if (!checkLoggedInUser()) {
             document.getElementById('loginPage').style.display = 'flex';
             document.getElementById('signupPage').style.display = 'none';
@@ -859,6 +837,12 @@
             }
             
             try {
+                // Check if LiveKit is loaded
+                if (typeof LivekitClient === 'undefined') {
+                    showError('LiveKit client not loaded. Please refresh the page.');
+                    return;
+                }
+                
                 // Request token from server
                 const response = await new Promise((resolve) => {
                     socket.emit('get-livekit-token', {
@@ -873,8 +857,10 @@
                     return;
                 }
                 
+                console.log('Token received, connecting to LiveKit...');
+                
                 // Connect to LiveKit
-                const room = new Room();
+                const room = new LivekitClient.Room();
                 
                 room.on('participantConnected', (participant) => {
                     console.log('Participant connected:', participant.identity);
@@ -912,6 +898,7 @@
                 });
                 
                 await room.connect(response.wsUrl, response.token);
+                console.log('LiveKit connection successful!');
                 
                 // Publish camera and microphone
                 await room.localParticipant.setCameraEnabled(true);
@@ -927,7 +914,6 @@
         }
 
         function addLocalVideoUI() {
-            // Show local video indicator
             const container = document.getElementById('participants');
             let wrapper = document.getElementById('local-video-wrapper');
             if (wrapper) return;
@@ -975,7 +961,6 @@
             const videoContainer = document.getElementById(`video-${identity}`);
             if (!videoContainer) return;
             
-            // Check if video already exists
             if (videoContainer.querySelector('video')) return;
             
             const video = document.createElement('video');
