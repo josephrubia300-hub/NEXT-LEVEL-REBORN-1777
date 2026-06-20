@@ -701,7 +701,6 @@
         let isAudioMuted = false;
         let messageCounter = 0;
         const sentMessages = new Set();
-        let isInitiator = false;
 
         function initApp(user, userRole) {
             username = user;
@@ -824,13 +823,16 @@
         socket.on('user-joined', (data) => {
             if (data.username !== username) {
                 addSystemMessage(`👋 ${escapeHtml(data.username)} (${data.role === 'teacher' ? 'Teacher' : 'Student'}) joined the class`);
-                // If we have local stream, send offer to new participant
-                if (localStream && peerConnection) {
+                // If teacher has camera, send offer to new student
+                if (role === 'teacher' && localStream && peerConnection) {
+                    setTimeout(() => createOffer(), 500);
+                }
+                // If student has camera and teacher is already in room
+                if (role === 'student' && localStream && peerConnection) {
                     setTimeout(() => {
-                        if (peerConnection && localStream) {
-                            createOffer();
-                        }
-                    }, 1000);
+                        // Student should wait for teacher's offer instead of creating one
+                        console.log('Student waiting for teacher offer...');
+                    }, 500);
                 }
             }
         });
@@ -863,7 +865,6 @@
         socket.on('receive-offer', async (data) => {
             console.log('Received offer from', data.from);
             try {
-                // Create peer connection if it doesn't exist
                 if (!peerConnection) {
                     createPeerConnection();
                 }
@@ -924,15 +925,19 @@
                 addLocalVideoUI();
                 console.log('Local media initialized');
                 
-                // Create peer connection
                 createPeerConnection();
                 
-                // Send offer after a short delay
-                setTimeout(() => {
-                    if (localStream && peerConnection) {
-                        createOffer();
-                    }
-                }, 1000);
+                // Only teacher initiates the call
+                if (role === 'teacher') {
+                    setTimeout(() => {
+                        if (localStream && peerConnection) {
+                            createOffer();
+                            console.log('Teacher offer sent');
+                        }
+                    }, 1000);
+                } else {
+                    console.log('Student waiting for teacher to initiate');
+                }
                 
             } catch (error) {
                 console.error('Error accessing media devices:', error);
@@ -1016,6 +1021,7 @@
                 }
                 remoteStream.addTrack(event.track);
                 addRemoteVideoUI(remoteStream);
+                console.log('Remote video added!');
             };
             
             peerConnection.onicecandidate = (event) => {
@@ -1039,10 +1045,8 @@
 
         function addRemoteVideoUI(stream) {
             const container = document.getElementById('participants');
-            // Check if remote video already exists
             let wrapper = document.querySelector('#participants .participant-wrapper:not(#local-video-wrapper)');
             if (wrapper) {
-                // Update existing remote video
                 const video = wrapper.querySelector('video');
                 if (video) {
                     video.srcObject = stream;
